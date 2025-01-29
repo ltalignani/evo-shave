@@ -2,7 +2,7 @@
 # coding: utf-8
 
 __author__ = "Loïc Talignani"
-__license__ = "MIT"
+__license__ = "GNU AGPL v3"
 
 
 # CONFIGURATION #
@@ -21,8 +21,6 @@ from snakemake.utils import min_version
 min_version("8.9.0")
 
 caller = config["caller"]
-
-wildcards = glob_wildcards("raw/{sample}_{unit}_{read}.fastq.gz")
 
 ###############################################################################
 # INCLUSION DES MODULES #

@@ -34,7 +34,7 @@ set-resources:
   bwa_mem:
     slurm_partition: "long"
     cpus_per_task: 16
-    mem_mb: attempt * 12000
+    mem_mb: attempt * 16000
     runtime: attempt * 360
   merge_bams:
     slurm_partition: "fast"
@@ -111,7 +111,6 @@ set-resources:
     cpus_per_task: 6
     mem_mb: attempt * 128000
     runtime: attempt * 2880
-  
 #config:
 #  my_parameter_list:
 #    - "item_0"
