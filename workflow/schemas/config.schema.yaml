@@ -1,0 +1,107 @@
+$schema: "http://json-schema.org/draft-06/schema#"
+title: "Snakemake Config Schema"
+type: object
+properties:
+  samples:
+    type: string
+    description: "Path to the samples file"
+  units:
+    type: string
+    description: "Path to the units file"
+  resources:
+    type: object
+    properties:
+      tmpdir:
+        type: string
+        description: "Temporary directory"
+    required:
+      - tmpdir
+  trimmomatic:
+    type: object
+    properties:
+      adapters:
+        type: object
+        properties:
+          nextera: { type: string }
+          truseq2-pe: { type: string }
+          truseq2-se: { type: string }
+          truseq3-pe: { type: string }
+          truseq3-pe-2: { type: string }
+          truseq3-se: { type: string }
+        required:
+          - nextera
+          - truseq2-pe
+          - truseq2-se
+          - truseq3-pe
+          - truseq3-pe-2
+          - truseq3-se
+      settings: { type: string }
+      phred: { type: string }
+    required:
+      - adapters
+      - settings
+      - phred
+  refs:
+    type: object
+    properties:
+      ref_name: { type: string }
+      path: { type: string }
+      reference: { type: string }
+      index: { type: string }
+      dict: { type: string }
+    required:
+      - ref_name
+      - path
+      - reference
+      - index
+      - dict
+  markdup:
+    type: object
+    properties:
+      remove-duplicates: { type: boolean }
+    required:
+      - remove-duplicates
+  caller:
+    type: string
+    enum:
+      - UnifiedGenotyper
+      - HaplotypeCaller
+  gatk:
+    type: object
+    properties:
+      haplotypecaller: { type: string }
+      output_mode: { type: string }
+      genomicsdbimport: { type: string }
+      genotypegvcfs: { type: string }
+    required:
+      - haplotypecaller
+      - output_mode
+      - genomicsdbimport
+      - genotypegvcfs
+  chromosomes:
+    type: array
+    items: { type: string }
+  filtering:
+    type: object
+    properties:
+      hard:
+        type: object
+        properties:
+          snvs: { type: string }
+          indels: { type: string }
+        required:
+          - snvs
+          - indels
+    required:
+      - hard
+required:
+  - samples
+  - units
+  - resources
+  - trimmomatic
+  - refs
+  - markdup
+  - caller
+  - gatk
+  - chromosomes
+  - filtering

@@ -1,0 +1,14 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: osx-64
+@EXPLICIT
+https://conda.anaconda.org/conda-forge/noarch/font-ttf-dejavu-sans-mono-2.37-hab24e00_0.tar.bz2#0c96522c6bdaed4b1566d11387caaf45
+https://conda.anaconda.org/conda-forge/osx-64/libexpat-2.6.3-hac325c4_0.conda#c1db99b0a94a2f23bd6ce39e2d314e07
+https://conda.anaconda.org/conda-forge/osx-64/libzlib-1.3.1-h87427d6_1.conda#b7575b5aa92108dcc9aaab0f05f2dbce
+https://conda.anaconda.org/conda-forge/osx-64/perl-5.32.1-7_h10d778d_perl5.conda#dc442e0885c3a6b65e61c61558161a9e
+https://conda.anaconda.org/conda-forge/osx-64/expat-2.6.3-hac325c4_0.conda#474cd8746e9f896fc5ae84af3c951796
+https://conda.anaconda.org/conda-forge/osx-64/libpng-1.6.44-h4b8f8c9_0.conda#f32ac2c8dd390dbf169f550887ed09d9
+https://conda.anaconda.org/conda-forge/osx-64/openjdk-22.0.1-h1c1aa8c_1.conda#a8dd6127191dd39894db2191d5f82872
+https://conda.anaconda.org/conda-forge/osx-64/freetype-2.12.1-h60636b9_2.conda#25152fce119320c980e5470e64834b50
+https://conda.anaconda.org/conda-forge/osx-64/fontconfig-2.14.2-h5bb23bf_0.conda#86cc5867dfbee4178118392bae4a3c89
+https://conda.anaconda.org/bioconda/noarch/fastqc-0.12.1-hdfd78af_0.tar.bz2#c9f6a4b12229f7331f79c9a00dd6e240

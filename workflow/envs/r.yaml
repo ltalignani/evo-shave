@@ -1,0 +1,10 @@
+channels:
+  - conda-forge
+dependencies:
+  - r-base
+  - r-knitr
+  - r-dt
+  - r-ggplot2
+  - r-rmarkdown
+  - pandoc
+  - nodejs

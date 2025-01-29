@@ -1,0 +1,119 @@
+executor: "slurm"
+default-resources:
+  slurm_account: "invalbo"
+  slurm_partition: "long"
+  runtime: 1000
+  cpus_per_task: 1
+  nodes: 1
+  tasks: 1
+  mem_mb: max((1.5 * input.size_mb) * attempt, 4000) # see https://snakemake.readthedocs.io/en/v8.4.7/executing/cli.html
+jobs: 100
+restart-times: 5
+latency-wait: 60
+rerun-incomplete: True
+use-envmodules: False
+use-conda: True
+conda-frontend: conda
+printshellcmds: True
+max-jobs-per-second: 1
+max-status-checks-per-second: 1
+local-cores: 1
+
+# Rules configuration
+set-resources:
+  fastqc:
+    slurm_partition: "fast"
+    cpus_per_task: 8
+    mem_mb: attempt * 4000
+    runtime: attempt * 60
+  trimmomatic:
+    slurm_partition: "fast"
+    cpus_per_task: 8
+    mem_mb: attempt * 8000
+    runtime: attempt * 180
+  bwa_mem:
+    slurm_partition: "long"
+    cpus_per_task: 16
+    mem_mb: attempt * 12000
+    runtime: attempt * 360
+  merge_bams:
+    slurm_partition: "fast"
+    cpus_per_task: 8
+    mem_mb: attempt * 8000
+    runtime: attempt * 180
+  markduplicates_bam:
+    slurm_partition: "fast"
+    cpus_per_task: 4
+    mem_mb: attemps * 16000
+    runtime: attempt * 240
+  samtools_index_markdup:
+    slurm_partition: "fast"
+    cpus_per_task: 4
+    mem_mb: attempt * 4000
+    runtime: attempt * 180
+  SetNmMdAndUqTags:
+    slurm_partition: "fast"
+    cpus_per_task: 2
+    mem_mb: attempt * 4000
+    runtime: attempt * 180
+  realignertargetcreator:
+    slurm_partition: "fast"
+    cpus_per_task: 1
+    mem_mb: attempt * 8000
+    runtime: attempt * 240
+  indelrealigner:
+    slurm_partition: "fast"
+    cpus_per_task: 8
+    mem_mb: attempt * 8000
+    runtime: attempt * 720
+  sort_by_queryname:
+    slurm_partition: "fast"
+    cpus_per_task: 8
+    mem_mb: attempt * 8000
+    runtime: attempt * 180
+  picard_fixmate:
+    slurm_partition: "fast"
+    cpus_per_task: 8
+    mem_mb: attempt * 8000
+    runtime: attempt * 120
+  sort_by_coordinate:
+    slurm_partition: "fast"
+    cpus_per_task: 8
+    mem_mb: attempt * 8000
+    runtime: attempt * 180
+  validatesam:
+    slurm_partition: "fast"
+    cpus_per_task: 2
+    mem_mb: attempt * 16000
+    runtime: attempt * 180
+  samtools_stats:
+    slurm_partition: "fast"
+    cpus_per_task: 4
+    mem_mb: attempt * 8000
+    runtime: attempt * 120
+  qualimap:
+    slurm_partition: "fast"
+    cpus_per_task: 8
+    mem_mb: attempt * 16000
+    runtime: attempt * 240
+  HaplotypeCaller:
+    slurm_partition: "long"
+    cpus_per_task: 4
+    mem_mb: attempt * 32000
+    runtime: attempt * 2040
+  genomics_db_import:
+    slurm_partition: "long"
+    cpus_per_task: 6
+    mem_mb: attempt * 24000
+    runtime: attempt * 14400
+  genotype_gvcfs:
+    slurm_partition: "long"
+    cpus_per_task: 6
+    mem_mb: attempt * 128000
+    runtime: attempt * 2880
+  
+#config:
+#  my_parameter_list:
+#    - "item_0"
+#    - "item_1"
+

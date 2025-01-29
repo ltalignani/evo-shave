@@ -1,0 +1,7 @@
+name: fastq-screen-0.15.2
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bioconda::fastq-screen
+  - bioconda::bwa

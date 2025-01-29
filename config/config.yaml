@@ -1,0 +1,92 @@
+###############################################################################
+# Author: Loïc TALIGNANI
+# Affiliation: IRD_MIVEGEC / Université de Montpellier
+# Aim: Configuration file for shave.smk snakefile
+# Date: 2022.10.05
+# Use: Edit or de/comment (#) settings
+# Latest modification: 2024.09.25
+# Done:
+###############################################################################
+samples: config/samples.tsv
+units: config/units.tsv
+
+resources:
+  tmpdir: "/shared/projects/invalbo/tmp/" # Temporary directory (default: '$TMPDIR')
+  ## Examples:
+  ## '$TMPDIR'  # System variable $TMPDIR (default)
+  ## '.'        # Local (i.e. root directory)
+  ## '/scratch' # HPC (set it to match your HPC usage)
+
+### TRIMMING --------------------------------------------------------------------------------------
+trimmomatic:
+  adapters:
+    nextera: "resources/adapters/NexteraPE-PE.fa"
+    truseq2-pe: "resources/adapters/TruSeq2-PE.fa"
+    truseq2-se: "resources/adapters/TruSeq2-SE.fa"
+    truseq3-pe: "resources/adapters/TruSeq3-PE.fa"
+    truseq3-pe-2: "resources/adapters/TruSeq3-PE-2.fa"
+    truseq3-se: "resources/adapters/TruSeq3-SE.fa"
+  settings: "ILLUMINACLIP:resources/adapters/TruSeq2-PE.fa:2:30:15 LEADING:20 TRAILING:3 SLIDINGWINDOW:5:20 AVGQUAL:20 MINLEN:50"
+  phred: "-phred33"
+
+### REFERENCE ----------------------------------------------------------------------------------------
+refs:
+  ref_name: "mPhoPho1.1_filtered.fasta"
+  path: "resources/genomes/" # Path to genomes references
+  reference: "resources/genomes/mPhoPho1.1_filtered.fasta" # Your reference, in fasta format
+  ## Available options:
+  ## 'resources/genomes/AalbF5_filtered.fasta'                                      # AalbF5
+  ## 'resources/genomes/Anopheles-gambiae-PEST_CHROMOSOMES_AgamP4.fa'               # AgamP4
+  index: "resources/genomes/mPhoPho1.1_filtered.fasta.fai" # index, obtained with samtools faidx
+  dict: "resources/genomes/mPhoPho1.1_filtered.dict" # Dictionary obtained with picard CreateSequenceDictionary
+
+### MARK DUPLICATES ----------------------------------------------------------------------------------------
+markdup:
+  remove-duplicates: true
+
+### GATK ---------------------------------------------------------------------------------------------
+caller: "HaplotypeCaller" # "UnifiedGenotyper" or "HaplotypeCaller"
+
+gatk:
+  haplotypecaller: "-ERC GVCF"
+  ## Available options:  "-ERC GVCF"                              Emit Ref Confidence scores with condensed non-variants blocks, ie the GVCF format
+  ##                     "-ERC BP_RESOLUTION"                     Emit Ref Confidence scores site by site
+  output_mode: "EMIT_ALL_CONFIDENT_SITES"
+  ##                     "EMIT_VARIANTS_ONLY"       Produces calls only at variant sites
+  ##                     "EMIT_ALL_ACTIVE_SITES"    Produces calls at any region over the activity threshold regardless of confidence. This will give a measure of reference confidence and a measure of which alt alleles are more plausible. Inflate VCF size considerably
+  ##                     "EMIT_ALL_CONFIDENT_SITES" Produces calls at variant sites and confident reference sites
+  genomicsdbimport: ""
+  genotypegvcfs: "--include-non-variant-sites"
+
+### CHROMOSOMES --------------------------------------------------------------------------------------
+chromosomes:
+  - "1"
+  - "2"
+  - "3"
+  - "4"
+  - "5"
+  - "6"
+  - "7"
+  - "8"
+  - "9"
+  - "10"
+  - "11"
+  - "12"
+  - "13"
+  - "14"
+  - "15"
+  - "16"
+  - "17"
+  - "18"
+  - "19"
+  - "20"
+  - "21"
+  - "X"
+
+### VCF FILTERING ------------------------------------------------------------------------------------
+filtering:
+  hard:
+    # hard filtering as outlined in GATK docs
+    # (https://gatkforums.broadinstitute.org/gatk/discussion/2806/howto-apply-hard-filters-to-a-call-set)
+    snvs: "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"
+    indels: "QD < 2.0 || FS > 200.0 || ReadPosRankSum < -20.0"

@@ -1,0 +1,16 @@
+.snakemake
+.DS_Store
+resources/genomes/
+resources/indexes/
+Cluster_logs/
+benchmarks/
+resources/
+trimmed/
+graphs/
+mapped/
+fixed/
+dedup/
+calls/
+logs/
+raw/
+qc/

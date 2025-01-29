@@ -1,0 +1,7 @@
+name: multiQC
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bioconda::multiqc
+  - conda-forge::python

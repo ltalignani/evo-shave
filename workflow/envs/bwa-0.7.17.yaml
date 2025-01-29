@@ -1,0 +1,7 @@
+name: bwa-0.7.17
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bwa
+  - picard

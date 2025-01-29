@@ -74,11 +74,11 @@ The key point is that it uses known, highly validated variant resources (such as
 
 #### UnifiedGenotyper
 
-<img src="./visuals/dag_ug.png" width="1200" height="500">  
+<img src="./visuals/dag_UG.png" width="1200" height="500">  
 
 #### HaplotypeCaller
 
-<img src="./visuals/dag_hc.png" width="1200" height="400">  
+<img src="./visuals/dag_HC.png" width="1200" height="400">  
 
 
 \~ INSTALLATIONS \~

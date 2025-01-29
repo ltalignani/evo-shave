@@ -1,0 +1,97 @@
+# vim: syntax=python tabstop=4 expandtab
+# coding: utf-8
+
+__author__ = "Loïc Talignani"
+__license__ = "MIT"
+
+
+# CONFIGURATION #
+configfile: "config/config.yaml"
+
+
+import glob
+import yaml
+
+# Load configuration
+with open("config/config.yaml", "r") as config_file:
+    config = yaml.safe_load(config_file)
+
+from snakemake.utils import min_version
+
+min_version("8.9.0")
+
+caller = config["caller"]
+
+wildcards = glob_wildcards("raw/{sample}_{unit}_{read}.fastq.gz")
+
+###############################################################################
+# INCLUSION DES MODULES #
+include: "rules/create_directories.smk"
+include: "rules/common.smk"
+include: "rules/fastqc.smk"
+include: "rules/trim.smk"
+include: "rules/bwa.smk"
+include: "rules/merge_bams.smk"  # Inclusion de la nouvelle règle après bwa
+include: "rules/markduplicates.smk"
+include: "rules/setnmtag.smk"
+include: "rules/samtools_index.smk"
+include: "rules/rtc.smk"
+include: "rules/indlr.smk"
+include: "rules/fixmateinformation.smk"
+include: "rules/qualimap.smk"
+include: "rules/awkforigv.smk"
+include: "rules/samtools_stats.smk"
+include: "rules/validatesam.smk"
+include: "rules/multiqc.smk"
+include: "rules/ug.smk"
+include: "rules/vcf_stats.smk"
+include: "rules/report_vcf.smk"
+include: "rules/hc.smk"
+include: "rules/genomicsdb.smk"
+include: "rules/gtgvcfs.smk"
+
+
+################################## A L L #######################################
+localrules:
+    create_directories,
+    create_bed_file_for_igv,
+    create_bam_list,
+
+
+if config["caller"] == "HaplotypeCaller":
+
+    rule all:
+        input:
+            "logs/.directories_created",
+            expand("qc/validatesam/{sample}_md.txt", sample=samples.index),
+            "qc/multiqc_report_hc.html",
+            expand(
+                "merged/{sample}_merged.bam",
+                sample=samples.index,
+            ),
+            "calls/all.vcf",
+
+elif config["caller"] == "UnifiedGenotyper":
+
+    rule all:
+        input:
+            expand("qc/validatesam/{sample}.fixed.sorted.txt", sample=samples.index),
+            expand("dedup/{sample}_realignertargetcreator.bed", sample=samples.index),
+            "qc/multiqc_report_ug.html",
+            expand(
+                "merged/{sample}_merged.bam",
+                sample=samples.index,
+            ),
+            expand("calls/variants.{chrom}.vcf.gz", chrom=config["chromosomes"]),
+            expand(
+                "qc/vcf_stats/vcf_{chrom}.{ext}",
+                chrom=config["chromosomes"],
+                ext=["frq", "idepth", "ldepth.mean", "lqual", "imiss", "lmiss"],
+            ),
+            expand(
+                "qc/vcf_stats/report_vcf_{chrom}.html",
+                chrom=config["chromosomes"],
+            ),
+
+else:
+    raise ValueError("Unsupported caller specified in config file.")
