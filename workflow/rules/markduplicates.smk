@@ -20,6 +20,6 @@ rule markduplicates_bam:
     log:
         "logs/md/{sample}_sorted_md.log",
     params:
-        extra="--REMOVE_DUPLICATES {config['markdup']['remove-duplicates']} --CREATE_INDEX TRUE --VALIDATION_STRINGENCY SILENT",
+        extra=lambda wildcards: f"--REMOVE_DUPLICATES {str(config['markdup']['remove-duplicates']).upper()} --CREATE_INDEX TRUE --VALIDATION_STRINGENCY SILENT",
     wrapper:
         "v4.5.0/bio/picard/markduplicates"
