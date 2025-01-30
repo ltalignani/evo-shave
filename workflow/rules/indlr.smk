@@ -9,7 +9,7 @@ reference_dict = config["refs"]["dict"]
 
 rule indelrealigner:
     message:
-        "Indel realignment for {wildcards.sample} sample of the unit {wildcards.unit}"
+        "Indel realignment for {wildcards.sample} sample"
     resources:
         partition="fast",
         cpus_per_task=1,

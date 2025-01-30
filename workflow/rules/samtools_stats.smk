@@ -4,7 +4,7 @@ def get_mem_mb(wildcards, attempt):
 
 rule samtools_stats:
     message:
-        "Samtools stats for {wildcards.sample} sample of the unit {wildcards.unit} before UnifiedGenotyper"
+        "Samtools stats for {wildcards.sample} sample before UnifiedGenotyper"
     resources:
         partition="fast",
         cpus_per_task=4,
@@ -30,7 +30,7 @@ rule samtools_stats:
 if config["caller"] == "HaplotypeCaller":
     use rule samtools_stats as samtools_stats_HC with:
         message:
-            "Samtools stats for {wildcards.sample} sample of the unit {wildcards.unit} before HaplotypeCaller"
+            "Samtools stats for {wildcards.sample} sample before HaplotypeCaller"
         input:
             "dedup/{sample}_sorted_md.bam",
         output:

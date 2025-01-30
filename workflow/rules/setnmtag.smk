@@ -3,7 +3,7 @@ reference_file = config["refs"]["reference"]
 
 rule SetNmMdAndUqTags:
     message:
-        "Picard SetNmMdAndUqTags for {wildcards.sample} of the unit {wildcards.unit}"
+        "Picard SetNmMdAndUqTags for {wildcards.sample}"
     resources:
         partition="fast",
         cpus_per_task=1,

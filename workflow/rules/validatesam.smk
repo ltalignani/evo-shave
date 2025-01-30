@@ -7,7 +7,7 @@ reference_file = config["refs"]["reference"]
 
 rule validatesam:
     message:
-        "picard ValidateSamFile for {wildcards.sample} sample of the unit {wildcards.unit} before UnifiedGenotyper"
+        "picard ValidateSamFile for {wildcards.sample} sample before UnifiedGenotyper"
     resources:
         partition="fast",
         cpus_per_task=1,
@@ -32,7 +32,7 @@ rule validatesam:
 
 use rule validatesam as validatesam_HC with:
     message:
-        "picard ValidateSamFile for {wildcards.sample} sample of the unit {wildcards.unit} before HaplotypeCaller"
+        "picard ValidateSamFile for {wildcards.sample} sample before HaplotypeCaller"
     input:
         "dedup/{sample}_sorted_md.bam",
     output:

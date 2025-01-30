@@ -9,7 +9,7 @@ reference_dict = config["refs"]["dict"]
 
 rule realignertargetcreator:
     message:
-        "RealignerTargetCreator creates a target intervals file for for {wildcards.sample} sample of the unit {wildcards.unit}"
+        "RealignerTargetCreator creates a target intervals file for for {wildcards.sample} sample"
     resources:
         partition="fast",
         cpus_per_task=8,

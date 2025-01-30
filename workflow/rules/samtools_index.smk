@@ -1,6 +1,6 @@
 rule samtools_index:
     message:
-        "Samtools index for {wildcards.sample} sample of the unit {wildcards.unit}"
+        "Samtools index for {wildcards.sample} sample"
     resources:
         partition="fast",
         cpus_per_task=4,
