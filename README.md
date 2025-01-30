@@ -18,8 +18,7 @@ The **Base Quality Score Recalibration** step requires a *known variation* VCF f
 
 The value of BQSR is also [increasingly being
 questioned](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-1279-z#Abs1)
-as mappers and callers are typically updated. Using HaplotypeCaller instead of
-UnifiedGenotyper greatly improves the handling of indels.
+as mappers and callers are typically updated. Using HaplotypeCaller instead of UnifiedGenotyper greatly improves the handling of indels.
 
 **Variant Quality Score recalibration** is arguably the most challenging part of the Best Practices to get right [according to Broad
 Institute](https://gatk.broadinstitute.org/hc/en-us/articles/4413056319131-VariantRecalibrator).
@@ -68,7 +67,7 @@ The key point is that it uses known, highly validated variant resources (such as
 
 ### Version
 
-*V2.2024.09.27*
+*V3.2025.01.30*
 
 ### Directed Acyclic Graph
 
@@ -102,7 +101,7 @@ rm -f ~/Miniconda3-latest-Linux-x86_64.sh && \
 exit
 ```
 
-e.g. for **MacOSX_INTEL-chips_x86_64-bit** or **MacOSX_M1/M2/M3-chips_arm_64-bit (with Rosetta)** systems:  
+e.g. for **MacOSX_INTEL-chips_x86_64-bit** or **MacOSX_M1/M2/M3/M4-chips_arm_64-bit (with Rosetta)** systems:  
 ```shell
 curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o ~/Miniconda3-latest-MacOSX-x86_64.sh && \
 bash ~/Miniconda3-latest-MacOSX-x86_64.sh -b -p ~/miniconda3/ && \
