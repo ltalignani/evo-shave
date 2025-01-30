@@ -89,17 +89,13 @@ def get_sample_bams(wildcards):
 
 # Fonction pour déterminer si un échantillon a plusieurs BAMs
 def get_bam_list(wildcards):
-    units_sample = units.loc[wildcards.sample]["unit"]
-    if isinstance(units_sample, str):
+    units_sample = units.loc[wildcards.sample]["unit"] # return a list of units: [L1, L8]
+    if isinstance(units_sample, str): 
         # Si un seul BAM, retourne une liste contenant le fichier BAM unique
         return [f"mapped/{wildcards.sample}_{units_sample}_sorted.bam"]
     else:
         # Retourne une liste de fichiers BAM à fusionner si plusieurs unités
-        return expand(
-            "mapped/{sample}_{unit}_sorted.bam",
-            sample=wildcards.sample,
-            unit=units_sample,
-        )
+        return [f"mapped/{wildcards.sample}_{unit}_sorted.bam" for unit in units_sample]
 
 
 # def get_regions_param(regions=config["processing"].get("restrict-regions"), default=""):
