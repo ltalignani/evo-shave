@@ -18,15 +18,8 @@ rule HaplotypeCaller:
         mem_mb=get_mem_mb,
         runtime=10080,
     input:
-        bam=expand(
-            "dedup/{sample}_sorted_md.bam",
-            sample=samples.index,
-            unit=units["unit"],
-        ),
-        index=expand(
-            "dedup/{sample}_sorted_md.bai",
-            sample=samples.index
-        ),
+        bam="dedup/{sample}_sorted_md.bam",
+        index="dedup/{sample}_sorted_md.bai",
         reference=reference_file,
         dictionary=dictionary,
         fai=index,
@@ -45,7 +38,7 @@ rule HaplotypeCaller:
         gatk HaplotypeCaller --java-options "-Xmx{resources.mem_mb}M" \
         -R {input.reference} \
         -I {input.bam} \
-        -O {output.gvcf} \
+        -O {output} \
         {params.other_options} \
         --output-mode {params.output_mode} \
         -L {params.interval} 2>&1 {log}

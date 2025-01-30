@@ -34,7 +34,8 @@ use rule validatesam as validatesam_HC with:
     message:
         "picard ValidateSamFile for {wildcards.sample} sample before HaplotypeCaller"
     input:
-        "dedup/{sample}_sorted_md.bam",
+        bam="dedup/{sample}_sorted_md.bam",
+        ref=reference_file,
     output:
         "qc/validatesam/{sample}_md.txt",
     log:
