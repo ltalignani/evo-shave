@@ -2,7 +2,7 @@
 ###################configuration slurm##############################
 #SBATCH -A invalbo
 #SBATCH --job-name=evoshave
-#SBATCH --time=1-23:00:00
+#SBATCH --time=2-23:00:00
 #SBATCH -p long
 #SBATCH -N 1
 #SBATCH -n 1
@@ -11,7 +11,7 @@
 #SBATCH -o Cluster_logs/%x-%j-%N.out
 #SBATCH -e Cluster_logs/%x-%j-%N.err
 #SBATCH --mail-user=loic.talignani@ird.fr
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=FAIL
 ###################################################################
 
 # USAGE: sbatch Start_shave.sh
