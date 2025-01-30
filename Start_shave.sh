@@ -25,7 +25,6 @@
 # Defining cache destination
 export XDG_CACHE_HOME=/shared/projects/invalbo/ev-shave/
 
-
 ###Charge module
 echo ""
 
@@ -48,9 +47,9 @@ echo ""
 echo -e "Name __________________ Start_shave.sh"
 echo -e "Author ________________ Loïc Talignani"
 echo -e "Affiliation ___________ UMR_MIVEGEC"
-echo -e "Aim ___________________ Bash script for SHort-read Alignment pipeline for VEctor v.1"
+echo -e "Aim ___________________ Bash script for SHort-read Alignment pipeline for VEctor v.3"
 echo -e "Date __________________ 2025.01.27"
-echo -e "Run ___________________ bash Start_shave.sh"
+echo -e "Run ___________________ sbatch Start_shave.sh"
 echo -e "Latest Modification ___ Added merge_bam rule"
 
 # Set working directory
@@ -99,7 +98,7 @@ echo -e "########### CREATE DIRECTORIES ###########"
 echo -e "------------------------------------------------------------------------"
 echo ""
 
-mkdir -p trimmed/ mapped/ dedup/ calls/ fixed/ graphs/ Cluster_logs/ \
+mkdir -p trimmed/ mapped/ dedup/ calls/ fixed/ graphs/ Cluster_logs/ tmp/ \
 logs/{awk,bwa_mem,bgzip,gatk3/{indelrealigner,realignertargetcreator,unifiedgenotyper},gatk4/{genomicsdbimport,haplotypecaller},fastqc,fastq-screen,picard,samtools_{index,stats},setnm,trimmomatic,md,qualimap/bamqc,validatesam,vcf_stats} \
 qc/{fastqc,fastq-screen,markdup,qualimap_ug,qualimap_hc,multiqc_data,samtools,validatesam,vcf_stats}
 

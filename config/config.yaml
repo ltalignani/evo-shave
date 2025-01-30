@@ -42,7 +42,7 @@ refs:
 
 ### MARK DUPLICATES ----------------------------------------------------------------------------------------
 markdup:
-  remove-duplicates: true
+  remove-duplicates: false
 
 ### GATK ---------------------------------------------------------------------------------------------
 caller: "HaplotypeCaller" # "UnifiedGenotyper" or "HaplotypeCaller"

@@ -4,9 +4,6 @@ def get_mem_mb(wildcards, attempt):
     return mem
 
 
-reference_file = config["refs"]["reference"]
-
-
 rule markduplicates_bam:
     message:
         "Mark Duplicates for {wildcards.sample} sample"
@@ -16,12 +13,7 @@ rule markduplicates_bam:
         mem_mb=lambda wildcards, attempt: get_mem_mb(wildcards, attempt),
         runtime=2400,
     input:
-        # bam=lambda wildcards: (
-        #     f"merged/{wildcards.sample}_merged.bam"
-        #     if os.path.exists(f"merged/{wildcards.sample}_merged.bam")
-        #     else f"mapped/{wildcards.sample}_{wildcards.unit}_sorted.bam"
-        # ),
-        bam="merged/{sample}_merged.bam",
+        bams="merged/{sample}_merged.bam",
     output:
         bam="dedup/{sample}_sorted_md.bam",
         metrics="qc/markdup/{sample}_sorted_md_metrics.txt",

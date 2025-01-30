@@ -44,7 +44,7 @@ set-resources:
   markduplicates_bam:
     slurm_partition: "fast"
     cpus_per_task: 4
-    mem_mb: attemps * 16000
+    mem_mb: attempt * 16000
     runtime: attempt * 240
   samtools_index_markdup:
     slurm_partition: "fast"
