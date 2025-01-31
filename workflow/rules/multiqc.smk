@@ -20,7 +20,7 @@ rule multiqc:
             sample=samples_list,
         ),
         expand(
-            "qc/qualimap_ug/{sample}/qualimapReport.html",
+            "qc/qualimap_ug/{sample}_report/qualimapReport.html",
             sample=samples_list,
         ),
     output:
@@ -51,7 +51,7 @@ use rule multiqc as multiqc_HC with:
             sample=samples_list,
         ),
         expand(
-            "qc/qualimap_hc/{sample}/qualimapReport.html",
+            "qc/qualimap_hc/{sample}_report/qualimapReport.html",
             sample=samples_list,
         ),
     output:

@@ -12,7 +12,7 @@ rule qualimap:
         # BAM aligned, splicing-aware, to reference genome
         bam=rules.sort_by_coordinate.output,
     output:
-        directory("qc/qualimap_ug/{sample}"),
+        directory("qc/qualimap_ug/{sample}_report"),
         #report_html="qc/qualimap_ug/{sample}/qualimapReport.html",
     conda:
         "../envs/qualimap.yaml"
@@ -29,5 +29,5 @@ use rule qualimap as qualimap_HC with:
     input:
         bam=rules.markduplicates_bam.output.bam,
     output:
-        directory("qc/qualimap_hc/{sample}"),
+        directory("qc/qualimap_hc/{sample}_report"),
         #report_html="qc/qualimap_hc/{sample}/qualimapReport.html",
