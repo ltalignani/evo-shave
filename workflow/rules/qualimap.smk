@@ -13,7 +13,7 @@ rule qualimap:
         bam=rules.sort_by_coordinate.output,
     output:
         directory("qc/qualimap_ug/{sample}_report"),
-        #report_html="qc/qualimap_ug/{sample}/qualimapReport.html",
+        report_html="qc/qualimap_ug/{sample}_report/qualimapReport.html",
     conda:
         "../envs/qualimap.yaml"
     log:
@@ -30,4 +30,4 @@ use rule qualimap as qualimap_HC with:
         bam=rules.markduplicates_bam.output.bam,
     output:
         directory("qc/qualimap_hc/{sample}_report"),
-        #report_html="qc/qualimap_hc/{sample}/qualimapReport.html",
+        report_html="qc/qualimap_hc/{sample}_report/qualimapReport.html",
