@@ -3,15 +3,13 @@ reference_file = config["refs"]["reference"]
 dictionary = config["refs"]["dict"]
 index = config["refs"]["index"]
 
-
 # FUNCTIONS AND COMMANDS
 def get_mem_mb(wildcards, attempt):
     return attempt * 16000
 
-
 rule HaplotypeCaller:
     message:
-        "GATK's HaplotypeCaller SNPs and indels calling for {wildcards.sample}"
+        "GATK's HaplotypeCaller SNPs and indels calling for {wildcards.sample} on {wildcards.chrom}"
     resources:
         partition="long",
         cpus_per_task=4,
@@ -26,7 +24,7 @@ rule HaplotypeCaller:
     params:
         other_options=config["gatk"]["haplotypecaller"],  # -ERC GVCF
         output_mode=config["gatk"]["output_mode"],  # EMIT_ALL_CONFIDENT_SITES
-        interval=lambda wildcards: wildcards.chrom,
+        interval=lambda wildcards: f"-L {wildcards.chrom}" if wildcards.chrom else "",
     output:
         "calls/{sample}.{chrom}.g.vcf.gz",
     conda:
@@ -38,8 +36,8 @@ rule HaplotypeCaller:
         gatk HaplotypeCaller --java-options "-Xmx{resources.mem_mb}M" \
         -R {input.reference} \
         -I {input.bam} \
-        -O {output} \
+        -O {output[0]} \
         {params.other_options} \
         --output-mode {params.output_mode} \
-        -L {params.interval} 2>&1 {log}
+        {params.interval} &> {log}
         """
