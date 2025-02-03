@@ -101,6 +101,11 @@ set-resources:
     cpus_per_task: 4
     mem_mb: attempt * 32000
     runtime: attempt * 2040
+  combine_gvcfs:
+    slurm_partition: "fast"
+    cpus_per_task: 10
+    mem_mb: attempt * 16000
+    runtime: attempt * 360
   genomics_db_import:
     slurm_partition: "long"
     cpus_per_task: 6

@@ -68,15 +68,9 @@ if config["caller"] == "HaplotypeCaller":
                 "merged/{sample}_merged.bam",
                 sample=samples.index,
             ),
-            expand("calls/all.{chrom}.vcf.gz", chrom=config["chromosomes"]),
-            expand(
-                "qc/vcf_stats/vcf_{chrom}.{ext}",
-                chrom=config["chromosomes"],
-                ext=["frq", "idepth", "ldepth.mean", "lqual", "imiss", "lmiss"],
-            ),
-            expand(
-                "qc/vcf_stats/report_vcf_{chrom}.html",
-                chrom=config["chromosomes"],
+            expand("calls/{sample}.{chrom}.g.vcf.gz", 
+                sample=samples.index,
+                chrom=config["chromosomes"]
             ),
 
 elif config["caller"] == "UnifiedGenotyper":
@@ -90,7 +84,7 @@ elif config["caller"] == "UnifiedGenotyper":
                 "merged/{sample}_merged.bam",
                 sample=samples.index,
             ),
-            expand("calls/all.{chrom}.vcf.gz", chrom=config["chromosomes"]),
+            expand("calls/variants.{chrom}.vcf.gz", chrom=config["chromosomes"]),
             expand(
                 "qc/vcf_stats/vcf_{chrom}.{ext}",
                 chrom=config["chromosomes"],
