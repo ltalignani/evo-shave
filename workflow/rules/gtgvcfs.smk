@@ -12,6 +12,7 @@ rule genotype_gvcfs:
         "GATK's GenotypeGVCFs"
     resources:
         partition="long",
+        cpus_per_task=10,
         mem_mb=get_mem_mb,
         runtime=10080,
         tmpdir=config["resources"]["tmpdir"],
