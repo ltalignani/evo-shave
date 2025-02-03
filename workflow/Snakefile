@@ -22,6 +22,7 @@ min_version("8.9.0")
 
 caller = config["caller"]
 
+
 ###############################################################################
 # INCLUSION DES MODULES #
 include: "rules/create_directories.smk"
@@ -62,7 +63,7 @@ if config["caller"] == "HaplotypeCaller":
         input:
             "logs/.directories_created",
             expand("qc/validatesam/{sample}_md.txt", sample=samples.index),
-            "qc/multiqc_report_hc.html",
+            "qc/multiqc.html",
             expand(
                 "merged/{sample}_merged.bam",
                 sample=samples.index,
@@ -75,7 +76,7 @@ elif config["caller"] == "UnifiedGenotyper":
         input:
             expand("qc/validatesam/{sample}.fixed.sorted.txt", sample=samples.index),
             expand("dedup/{sample}_realignertargetcreator.bed", sample=samples.index),
-            "qc/multiqc_report_ug.html",
+            "qc/multiqc.html",
             expand(
                 "merged/{sample}_merged.bam",
                 sample=samples.index,

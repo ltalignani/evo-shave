@@ -1,31 +1,32 @@
 # FUNCTIONS AND COMMANDS
 def get_mem_mb(wildcards, attempt):
-    return attempt * 16000
+    return max(32000, attempt * 16000)  # Minimum de 32 Go
 
 
 rule genomics_db_import:
     message:
         "GATK's GenomicsDBImport for multiple g.vcfs for chromosome {wildcards.chrom}"
     resources:
-        partition = "long",
-        cpus_per_task = 6,
-        mem_mb = get_mem_mb,
-        runtime = 10080,
+        partition="long",
+        mem_mb=get_mem_mb,
+        java_mem_overhead_mb=12000,
+        runtime=10080,
+        tmpdir=config["resources"]["tmpdir"],
     input:
-        gvcfs=expand(
+        gvcfs=lambda wildcards: expand(
             "calls/{sample}.{chrom}.g.vcf.gz",
             sample=samples.index,
-            chrom=config["chromosomes"],
+            chrom=[wildcards.chrom],
         ),
     output:
         db=directory("calls/db.{chrom}"),
     log:
-        "logs/gatk4/genomicsdbimport.{chrom}.log",
+        "logs/gatk4/genomicsdbimport/genomicsdbimport.{chrom}.log",
     params:
         intervals=lambda wildcards: wildcards.chrom,
-        db_action="create",                                                 # optional: create | update
-        extra=lambda wildcards: f"--tmp-dir {config['resources']['tmpdir']}",  # optional
-        java_opts=lambda wildcards, resources: f"-Xmx{resources.mem_mb}M",  # optional
-    threads: 2
+        db_action="create",
+        extra="",
+        java_opts="-XX:ParallelGCThreads=10",
+    threads: 1
     wrapper:
         "v4.6.0/bio/gatk/genomicsdbimport"

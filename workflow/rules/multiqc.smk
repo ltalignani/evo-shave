@@ -24,8 +24,8 @@ rule multiqc:
             sample=samples_list,
         ),
     output:
-        "qc/multiqc_report_ug.html",
-        directory("qc/multiqc_data_ug"),
+        "qc/multiqc.html",
+        directory("qc/multiqc_data"),
     params:
         extra="--verbose",
     log:
@@ -55,5 +55,5 @@ use rule multiqc as multiqc_HC with:
             sample=samples_list,
         ),
     output:
-        "qc/multiqc_report_hc.html",
-        directory("qc/multiqc_data_hc"),
+        "qc/multiqc.html",
+        directory("qc/multiqc_data"),
