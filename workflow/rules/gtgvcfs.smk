@@ -4,7 +4,7 @@ reference_file = config["refs"]["reference"]
 
 # FUNCTIONS AND COMMANDS
 def get_mem_mb(wildcards, attempt):
-    return attempt * 16000
+    return attempt * 16000  # Augmente la mémoire allouée à chaque tentative
 
 
 rule genotype_gvcfs:
@@ -15,19 +15,16 @@ rule genotype_gvcfs:
         cpus_per_task=10,
         mem_mb=get_mem_mb,
         runtime=10080,
-        tmpdir=config["resources"]["tmpdir"],
     input:
-        gvcf=expand(
-            "calls/db.{chrom}",
-            chrom=config["chromosomes"],
-        ),
+        genomicsdb=directory(lambda wildcards: f"calls/db.{wildcards.chrom}"),
         ref=reference_file,
+        intervals=lambda wildcards: wildcards.chrom,  # Utilisation correcte des intervalles
     output:
         vcf="calls/all.{chrom}.vcf.gz",
     log:
         "logs/gatk4/genotypegvcfs.{chrom}.log",
     params:
-        extra="",  # optional
-        java_opts="-XX:ParallelGCThreads=10",  # optional
+        extra="--include-non-variant-sites",
+        java_opts="-XX:ParallelGCThreads=10",
     wrapper:
         "v4.6.0/bio/gatk/genotypegvcfs"
