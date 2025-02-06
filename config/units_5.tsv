@@ -1,0 +1,5 @@
+sample	unit	platform	fq1	fq2
+145216	L3	BGI	raw/145216_L3_R1.fastq.gz	raw/145216_L3_R2.fastq.gz
+145216	L4	BGI	raw/145216_L4_R1.fastq.gz	raw/145216_L4_R2.fastq.gz
+145216	L5	BGI	raw/145216_L5_R1.fastq.gz	raw/145216_L5_R2.fastq.gz
+145216	L6	BGI	raw/145216_L6_R1.fastq.gz	raw/145216_L6_R2.fastq.gz

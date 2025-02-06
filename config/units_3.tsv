@@ -1,0 +1,13 @@
+sample	unit	platform	fq1	fq2
+4393	L1	BGI	raw/4393_L1_R1.fastq.gz	raw/4393_L1_R2.fastq.gz
+4393	L2	BGI	raw/4393_L2_R1.fastq.gz	raw/4393_L2_R2.fastq.gz
+4393	L3	BGI	raw/4393_L3_R1.fastq.gz	raw/4393_L3_R2.fastq.gz
+4393	L4	BGI	raw/4393_L4_R1.fastq.gz	raw/4393_L4_R2.fastq.gz
+4394	L1	BGI	raw/4394_L1_R1.fastq.gz	raw/4394_L1_R2.fastq.gz
+4394	L2	BGI	raw/4394_L2_R1.fastq.gz	raw/4394_L2_R2.fastq.gz
+4394	L3	BGI	raw/4394_L3_R1.fastq.gz	raw/4394_L3_R2.fastq.gz
+4394	L4	BGI	raw/4394_L4_R1.fastq.gz	raw/4394_L4_R2.fastq.gz
+4396	L1	BGI	raw/4396_L1_R1.fastq.gz	raw/4396_L1_R2.fastq.gz
+4396	L2	BGI	raw/4396_L2_R1.fastq.gz	raw/4396_L2_R2.fastq.gz
+4396	L3	BGI	raw/4396_L3_R1.fastq.gz	raw/4396_L3_R2.fastq.gz
+4396	L4	BGI	raw/4396_L4_R1.fastq.gz	raw/4396_L4_R2.fastq.gz

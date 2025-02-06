@@ -23,7 +23,7 @@ rule bwa_mem:
         ],
         ref=reference_file,
         idx=multiext(
-            "resources/genomes/AalbF5_filtered.fasta",
+            reference_file,
             ".amb",
             ".ann",
             ".bwt",
@@ -35,7 +35,7 @@ rule bwa_mem:
     log:
         "logs/bwa_mem/{sample}_{unit}_sorted.log",
     params:
-        extra=lambda wildcards: get_read_group(wildcards), #r"-R '@RG\tID:{sample}\tSM:{sample}\tCN:SC\tPL:{platform}'",
+        extra=lambda wildcards: get_read_group(wildcards),  #r"-R '@RG\tID:{sample}\tSM:{sample}\tCN:SC\tPL:{platform}'",
         msp="-M",  # Mark Shorter Splits for Picard compatibility
         out_al="-T 0",
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.

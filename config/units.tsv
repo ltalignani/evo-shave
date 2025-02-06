@@ -119,5 +119,5 @@ U93	L8	BGI	raw/U93_L8_R1.fastq.gz	raw/U93_L8_R2.fastq.gz
 983	L2	BGI	raw/983_L2_R1.fastq.gz	raw/983_L2_R2.fastq.gz
 984	L5	BGI	raw/984_L5_R1.fastq.gz	raw/984_L5_R2.fastq.gz
 984	L6	BGI	raw/984_L6_R1.fastq.gz	raw/984_L6_R2.fastq.gz
-
-# Attention 4393 n'a pas été traité avec les L1/L2 car possède aussi L3/L4. A traiter seul en dernier.
+mon-mon_400M	L1	Illumina	raw/mon-mon_400M_L1_R1.fastq.gz	raw/mon-mon_400M_L1_R2.fastq.gz
+mon-mon_CP-4187-10X	L1	Illumina	raw/mon-mon_CP-4187-10X_L1_R1.fastq.gz	raw/mon-mon_CP-4187-10X_L1_R2.fastq.gz
