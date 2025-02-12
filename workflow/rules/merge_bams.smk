@@ -7,7 +7,6 @@ def get_input(wildcards):
         input.append("mapped/{}_{}_sorted.bam".format(wildcards.sample, row["unit"]))
     return input
 
-
 rule merge_bams:
     message:
         "Merging BAM files for {wildcards.sample}"
@@ -26,9 +25,18 @@ rule merge_bams:
         mem_mb=16000,
         runtime=120,
     run:
-        bams = " --INPUT ".join(input)
-        shell(
-            """
-            module load picard/2.23.5
-            picard MergeSamFiles --INPUT {bams} --OUTPUT {output.bam} --USE_THREADING true --SORT_ORDER coordinate {params.extra} --TMP_DIR {params.tmpdir} > {log} 2>&1"""
-        )
+        if len(input) == 1:
+            # Si seule un unit existe, copier simplement le fichier
+            shell(
+                """
+                cp {input[0]} {output.bam}
+                touch {log}
+                """
+            )
+        else:
+            bams = " --INPUT ".join(input)
+            shell(
+                """
+                module load picard/2.23.5
+                picard MergeSamFiles --INPUT {bams} --OUTPUT {output.bam} --USE_THREADING true --SORT_ORDER coordinate {params.extra} --TMP_DIR {params.tmpdir} > {log} 2>&1"""
+            )
