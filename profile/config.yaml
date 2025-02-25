@@ -24,97 +24,97 @@ set-resources:
   fastqc:
     slurm_partition: "fast"
     cpus_per_task: 8
-    mem_mb: attempt * 4000
-    runtime: attempt * 60
+    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
+    runtime: max((input.size_mb / 1024) * 6 * attempt, 30)
   trimmomatic:
     slurm_partition: "fast"
     cpus_per_task: 8
-    mem_mb: attempt * 8000
-    runtime: attempt * 180
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    runtime: max((input.size_mb / 1024) * 18 * attempt, 40)
   bwa_mem:
     slurm_partition: "long"
     cpus_per_task: 16
-    mem_mb: attempt * 16000
-    runtime: attempt * 360
+    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
+    runtime: max((input.size_mb / 1024) * 36 * attempt, 120)
   merge_bams:
     slurm_partition: "fast"
     cpus_per_task: 8
-    mem_mb: attempt * 8000
-    runtime: attempt * 180
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    runtime: max((input.size_mb / 1024) * 6 * attempt, 30)
   markduplicates_bam:
     slurm_partition: "fast"
     cpus_per_task: 4
-    mem_mb: attempt * 16000
-    runtime: attempt * 240
+    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
+    runtime: max((input.size_mb / 1024) * 18 * attempt, 120)
   samtools_index_markdup:
     slurm_partition: "fast"
     cpus_per_task: 4
-    mem_mb: attempt * 4000
-    runtime: attempt * 180
+    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
+    runtime: max((input.size_mb / 1024) * 8 * attempt, 80)
   SetNmMdAndUqTags:
     slurm_partition: "fast"
     cpus_per_task: 2
-    mem_mb: attempt * 4000
-    runtime: attempt * 180
+    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
+    runtime: max((input.size_mb / 1024) * 6 * attempt, 60)
   realignertargetcreator:
     slurm_partition: "fast"
     cpus_per_task: 1
-    mem_mb: attempt * 8000
-    runtime: attempt * 240
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    runtime: max((input.size_mb / 1024) * 12 * attempt, 30)
   indelrealigner:
     slurm_partition: "fast"
     cpus_per_task: 8
-    mem_mb: attempt * 8000
-    runtime: attempt * 720
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    runtime: max((input.size_mb / 1024) * 60 * attempt, 120)
   sort_by_queryname:
     slurm_partition: "fast"
     cpus_per_task: 8
-    mem_mb: attempt * 8000
-    runtime: attempt * 180
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    runtime: max((input.size_mb / 1024) * 18 * attempt, 40)
   picard_fixmate:
     slurm_partition: "fast"
     cpus_per_task: 8
-    mem_mb: attempt * 8000
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: attempt * 120
   sort_by_coordinate:
     slurm_partition: "fast"
     cpus_per_task: 8
-    mem_mb: attempt * 8000
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: attempt * 180
   validatesam:
     slurm_partition: "fast"
     cpus_per_task: 2
-    mem_mb: attempt * 16000
-    runtime: attempt * 180
+    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
+    runtime: max((input.size_mb / 1024) * 18 * attempt, 40)
   samtools_stats:
     slurm_partition: "fast"
     cpus_per_task: 4
-    mem_mb: attempt * 8000
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: attempt * 120
   qualimap:
     slurm_partition: "fast"
     cpus_per_task: 8
-    mem_mb: attempt * 16000
+    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
     runtime: attempt * 240
   HaplotypeCaller:
     slurm_partition: "long"
     cpus_per_task: 4
-    mem_mb: attempt * 32000
+    mem_mb: max((1.5 * input.size_mb) * attempt, 32000)
     runtime: attempt * 2040
   combine_gvcfs:
     slurm_partition: "fast"
     cpus_per_task: 10
-    mem_mb: attempt * 16000
+    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
     runtime: attempt * 360
   genomics_db_import:
     slurm_partition: "long"
     cpus_per_task: 6
-    mem_mb: attempt * 24000
+    mem_mb: max((1.5 * input.size_mb) * attempt, 24000)
     runtime: attempt * 14400
   genotype_gvcfs:
     slurm_partition: "long"
     cpus_per_task: 6
-    mem_mb: attempt * 128000
+    mem_mb: max((1.5 * input.size_mb) * attempt, 128000)
     runtime: attempt * 2880
 #config:
 #  my_parameter_list:
