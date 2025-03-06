@@ -29,7 +29,7 @@ sample	unit	platform	fq1	fq2
 92-SV30F	L1	ILLUMINA	raw/92-SV30F_L1_R1.fastq.gz	raw/92-SV30F_L1_R2.fastq.gz
 96-012	L1	ILLUMINA	raw/96-012_L1_R1.fastq.gz	raw/96-012_L1_R2.fastq.gz
 97-034	L1	ILLUMINA	raw/97-034_L1_R1.fastq.gz	raw/97-034_L1_R2.fastq.gz
-98-028	L1	ILLUMINA	raw/98-028_L1_R1.fastq.gz	raw/98-028_L1_R2.fastq.gz
+98-028	L1	ILLUMINA	raw/98-028_L1_R1.fastq.gz	raw/98-028_L1_R2.fastq.gz   
 A1984-05062	L1	ILLUMINA	raw/A1984-05062_L1_R1.fastq.gz	raw/A1984-05062_L1_R2.fastq.gz
 A1984-05087	L1	ILLUMINA	raw/A1984-05087_L1_R1.fastq.gz	raw/A1984-05087_L1_R2.fastq.gz
 A1986-05214	L1	ILLUMINA	raw/A1986-05214_L1_R1.fastq.gz	raw/A1986-05214_L1_R2.fastq.gz

@@ -86,12 +86,12 @@ set-resources:
     cpus_per_task: 2
     mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
     runtime: max((input.size_mb / 1024) * 18 * attempt, 40)
-  samtools_stats:
+  samtools_stats_HC:
     slurm_partition: "fast"
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: attempt * 120
-  qualimap:
+  qualimap_hc:
     slurm_partition: "fast"
     cpus_per_task: 8
     mem_mb: max((1.5 * input.size_mb) * attempt, 16000)

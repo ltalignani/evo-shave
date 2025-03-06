@@ -1,15 +1,24 @@
 sample	unit	platform	fq1	fq2
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+19LN834	L1	ILLUMINA	raw/19LN834_L1_R1.fastq.gz	raw/19LN834_L1_R2.fastq.gz
+2001	L1	ILLUMINA	raw/2001_L1_R1.fastq.gz	raw/2001_L1_R2.fastq.gz
+3014	L1	ILLUMINA	raw/3014_L1_R1.fastq.gz	raw/3014_L1_R2.fastq.gz
+3017	L1	ILLUMINA	raw/3017_L1_R1.fastq.gz	raw/3017_L1_R2.fastq.gz
+3032	L1	ILLUMINA	raw/3032_L1_R1.fastq.gz	raw/3032_L1_R2.fastq.gz
+4996	L1	ILLUMINA	raw/4996_L1_R1.fastq.gz	raw/4996_L1_R2.fastq.gz
+A1984-05087	L1	ILLUMINA	raw/A1984-05087_L1_R1.fastq.gz	raw/A1984-05087_L1_R2.fastq.gz
+A1993-05175	L1	ILLUMINA	raw/A1993-05175_L1_R1.fastq.gz	raw/A1993-05175_L1_R2.fastq.gz
+A1997-05187	L1	ILLUMINA	raw/A1997-05187_L1_R1.fastq.gz	raw/A1997-05187_L1_R2.fastq.gz
+A2005-05129	L1	ILLUMINA	raw/A2005-05129_L1_R1.fastq.gz	raw/A2005-05129_L1_R2.fastq.gz
+C1988-05707	L1	ILLUMINA	raw/C1988-05707_L1_R1.fastq.gz	raw/C1988-05707_L1_R2.fastq.gz
+C1989-05720	L1	ILLUMINA	raw/C1989-05720_L1_R1.fastq.gz	raw/C1989-05720_L1_R2.fastq.gz
+C2004-5008	L1	ILLUMINA	raw/C2004-5008_L1_R1.fastq.gz	raw/C2004-5008_L1_R2.fastq.gz
+C2004-5009	L1	ILLUMINA	raw/C2004-5009_L1_R1.fastq.gz	raw/C2004-5009_L1_R2.fastq.gz
+No-2	L1	ILLUMINA	raw/No-2_L1_R1.fastq.gz	raw/No-2_L1_R2.fastq.gz
+No-5	L1	ILLUMINA	raw/No-5_L1_R1.fastq.gz	raw/No-5_L1_R2.fastq.gz
+Pol-72	L1	ILLUMINA	raw/Pol-72_L1_R1.fastq.gz	raw/Pol-72_L1_R2.fastq.gz
+Pp040801	L1	ILLUMINA	raw/Pp040801_L1_R1.fastq.gz	raw/Pp040801_L1_R2.fastq.gz
+Pp130701s	L1	ILLUMINA	raw/Pp130701s_L1_R1.fastq.gz	raw/Pp130701s_L1_R2.fastq.gz
+Pp160702	L1	ILLUMINA	raw/Pp160702_L1_R1.fastq.gz	raw/Pp160702_L1_R2.fastq.gz
+Pp180701	L1	ILLUMINA	raw/Pp180701_L1_R1.fastq.gz	raw/Pp180701_L1_R2.fastq.gz
+Pp2002-02s	L1	ILLUMINA	raw/Pp2002-02s_L1_R1.fastq.gz	raw/Pp2002-02s_L1_R2.fastq.gz
+NHV1-2019-29-11	L1	ILLUMINA	raw/NHV1-2019-29-11_L1_R1.fastq.gz	raw/NHV1-2019-29-11_L1_R2.fastq.gz
