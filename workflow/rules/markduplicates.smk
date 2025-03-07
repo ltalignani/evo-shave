@@ -11,7 +11,7 @@ rule markduplicates_bam:
         partition="fast",
         cpus_per_task=1,
         mem_mb=lambda wildcards, attempt: get_mem_mb(wildcards, attempt),
-        runtime=2400,
+        runtime=120,
     input:
         bams="merged/{sample}_merged.bam",
     output:

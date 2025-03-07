@@ -12,7 +12,7 @@ rule validatesam:
         partition="fast",
         cpus_per_task=1,
         mem_mb=get_mem_mb,
-        runtime=320,
+        runtime=60,
     input:
         bam=rules.sort_by_coordinate.output,
         ref=reference_file,

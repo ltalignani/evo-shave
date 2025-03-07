@@ -3,14 +3,14 @@ rule fastqc:
         "Quality Control with FastQC for {wildcards.sample} sample of the unit {wildcards.unit}, read {wildcards.read}"
     resources:
         partition="fast",
-        cpus_per_task=8,
+        cpus_per_task=4,
         mem_mb=16000,
         runtime=240,
-    threads: 8
+    threads: 4
     input:
         lambda wildcards: get_fastq(wildcards)[f"r{wildcards.read}"],  # Sélection du fichier correspondant à read=1 ou 2
     output:
-        html="qc/fastqc/{sample}_{unit}_R{read}.html",  
+        html="qc/fastqc/{sample}_{unit}_R{read}.html",
         zip="qc/fastqc/{sample}_{unit}_R{read}_fastqc.zip",  # le suffixe _fastqc.zip est nécessaire pour multiqc
     params:
         extra="--quiet",

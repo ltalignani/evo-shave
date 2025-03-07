@@ -14,7 +14,7 @@ rule genotype_gvcfs:
         partition="long",
         cpus_per_task=10,
         mem_mb=get_mem_mb,
-        runtime=10080,
+        runtime=2880,
         tmpdir=config["resources"]["tmpdir"],
     input:
         gvcf=lambda wildcards: f"calls/all.{{wildcards.chrom}}.g.vcf.gz",

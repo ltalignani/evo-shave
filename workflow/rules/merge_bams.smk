@@ -7,6 +7,7 @@ def get_input(wildcards):
         input.append("mapped/{}_{}_sorted.bam".format(wildcards.sample, row["unit"]))
     return input
 
+
 rule merge_bams:
     message:
         "Merging BAM files for {wildcards.sample}"
@@ -23,7 +24,7 @@ rule merge_bams:
         partition="fast",
         cpus_per_task=4,
         mem_mb=16000,
-        runtime=120,
+        runtime=30,
     run:
         if len(input) == 1:
             # Si seule un unit existe, copier simplement le fichier

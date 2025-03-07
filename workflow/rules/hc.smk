@@ -14,7 +14,7 @@ rule HaplotypeCaller:
         partition="long",
         cpus_per_task=4,
         mem_mb=get_mem_mb,
-        runtime=10080,
+        runtime=180,
     input:
         bam="dedup/{sample}_sorted_md.bam",
         index="dedup/{sample}_sorted_md.bai",
