@@ -27,10 +27,10 @@ set-resources:
     mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
     runtime: max((input.size_mb / 1024) * 6 * attempt, 30)
   trimmomatic:
-    slurm_partition: "fast"
+    slurm_partition: "long"
     cpus_per_task: 8
     mem_mb: max((1.5 * input.size_mb) * attempt, 6000)
-    runtime: max((input.size_mb / 1024) * 18 * attempt, 300)
+    runtime: max((input.size_mb / 1024) * 30 * attempt, 300)
   bwa_mem:
     slurm_partition: "long"
     cpus_per_task: 16
@@ -42,7 +42,7 @@ set-resources:
     mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
     runtime: max((input.size_mb / 1024) * 6 * attempt, 30)
   markduplicates_bam:
-    slurm_partition: "fast"
+    slurm_partition: "long"
     cpus_per_task: 1
     mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
     runtime: max((input.size_mb / 1024) * 18 * attempt, 120)
@@ -67,7 +67,7 @@ set-resources:
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: max((input.size_mb / 1024) * 12 * attempt, 240)
   indelrealigner:
-    slurm_partition: "fast"
+    slurm_partition: "long"
     cpus_per_task: 1
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: max((input.size_mb / 1024) * 60 * attempt, 120)
