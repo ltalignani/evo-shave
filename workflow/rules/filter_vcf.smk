@@ -213,7 +213,9 @@ rule merge_filtered_vcf:
         snvs="calls/snvs.{chrom}.pass.vcf.gz",
         indels="calls/indels.{chrom}.pass.vcf.gz",
     output:
-        "calls/all.{chrom}.filtered.vcf.gz",
+        temp("calls/all.{chrom}.filtered.vcf.gz")
+        if vcf_output_mode == "merged"
+        else "calls/all.{chrom}.filtered.vcf.gz",
     log:
         "logs/gatk4/filter/merge_filtered.{chrom}.log",
     conda:

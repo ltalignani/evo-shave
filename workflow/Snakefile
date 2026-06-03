@@ -30,7 +30,7 @@ include: "rules/common.smk"
 include: "rules/fastqc.smk"
 include: "rules/trim.smk"
 include: "rules/bwa.smk"
-include: "rules/merge_bams.smk"  # Inclusion de la nouvelle règle après bwa
+include: "rules/merge_bams.smk"
 include: "rules/markduplicates.smk"
 include: "rules/setnmtag.smk"
 include: "rules/samtools_index.smk"
@@ -43,11 +43,13 @@ include: "rules/samtools_stats.smk"
 include: "rules/validatesam.smk"
 include: "rules/multiqc.smk"
 include: "rules/ug.smk"
-include: "rules/vcf_stats.smk"
-include: "rules/report_vcf.smk"
 include: "rules/hc.smk"
 include: "rules/genomicsdb.smk"
 include: "rules/gtgvcfs.smk"
+include: "rules/filter_vcf.smk"
+include: "rules/bcftools_stats.smk"
+include: "rules/vcf_stats.smk"
+include: "rules/report_vcf.smk"
 
 
 ################################## A L L #######################################
@@ -57,6 +59,36 @@ localrules:
     create_bam_list,
 
 
+# Pre-compute VCF output targets based on vcf_output_mode and enable_variant_calling.
+# chromosomes and vcf_output_mode are defined in rules/common.smk.
+if config.get("enable_variant_calling", True):
+    _vcf_per_chrom = expand("calls/all.{chrom}.filtered.vcf.gz", chrom=chromosomes)
+    _vcf_merged = ["calls/all.filtered.vcf.gz"]
+    _bcftools_raw = expand(
+        "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt", chrom=chromosomes
+    )
+    _bcftools_filtered = expand(
+        "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt", chrom=chromosomes
+    )
+    _bcftools_genome = ["qc/vcf_stats/all.filtered.bcftools_stats.txt"]
+    _vcftools = expand("qc/vcf_stats/vcf_{chrom}.frq", chrom=chromosomes)
+    _reports = expand("qc/vcf_stats/report_vcf_{chrom}.html", chrom=chromosomes)
+
+    if vcf_output_mode == "per_contig":
+        _vcf_outputs = _vcf_per_chrom
+    elif vcf_output_mode == "merged":
+        _vcf_outputs = _vcf_merged
+    else:  # "both"
+        _vcf_outputs = _vcf_per_chrom + _vcf_merged
+
+    _vcf_qc = _bcftools_raw + _bcftools_filtered + _vcftools + _reports
+    if vcf_output_mode != "per_contig":
+        _vcf_qc += _bcftools_genome
+else:
+    _vcf_outputs = []
+    _vcf_qc = []
+
+
 if config["caller"] == "HaplotypeCaller":
 
     rule all:
@@ -64,16 +96,18 @@ if config["caller"] == "HaplotypeCaller":
             "logs/.directories_created",
             expand("qc/validatesam/{sample}_md.txt", sample=samples.index),
             "qc/multiqc.html",
-            expand(
-                "merged/{sample}_merged.bam",
-                sample=samples.index,
-            ),
+            expand("merged/{sample}_merged.bam", sample=samples.index),
             (
-                expand("calls/{sample}.{chrom}.g.vcf.gz",
+                expand(
+                    "calls/{sample}.{chrom}.g.vcf.gz",
                     sample=samples.index,
-                    chrom=config["chromosomes"]
-                ) if config.get("enable_variant_calling", True) else []
+                    chrom=chromosomes,
+                )
+                if config.get("enable_variant_calling", True)
+                else []
             ),
+            _vcf_outputs,
+            _vcf_qc,
 
 elif config["caller"] == "UnifiedGenotyper":
 
@@ -82,27 +116,14 @@ elif config["caller"] == "UnifiedGenotyper":
             expand("qc/validatesam/{sample}.fixed.sorted.txt", sample=samples.index),
             expand("dedup/{sample}_realignertargetcreator.bed", sample=samples.index),
             "qc/multiqc.html",
-            expand(
-                "merged/{sample}_merged.bam",
-                sample=samples.index,
-            ),
+            expand("merged/{sample}_merged.bam", sample=samples.index),
             (
-                expand("calls/variants.{chrom}.vcf.gz", chrom=config["chromosomes"])
-                if config.get("enable_variant_calling", True) else []
+                expand("calls/variants.{chrom}.vcf.gz", chrom=chromosomes)
+                if config.get("enable_variant_calling", True)
+                else []
             ),
-            (
-                expand(
-                    "qc/vcf_stats/vcf_{chrom}.{ext}",
-                    chrom=config["chromosomes"],
-                    ext=["frq", "idepth", "ldepth.mean", "lqual", "imiss", "lmiss"],
-                ) if config.get("enable_variant_calling", True) else []
-            ),
-            (
-                expand(
-                    "qc/vcf_stats/report_vcf_{chrom}.html",
-                    chrom=config["chromosomes"],
-                ) if config.get("enable_variant_calling", True) else []
-            ),
+            _vcf_outputs,
+            _vcf_qc,
 
 else:
     raise ValueError("Unsupported caller specified in config file.")

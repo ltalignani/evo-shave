@@ -25,13 +25,13 @@ rule multiqc:
         ),
         expand(
             "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt",
-            chrom=config["chromosomes"],
+            chrom=chromosomes,
         ),
         expand(
             "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt",
-            chrom=config["chromosomes"],
+            chrom=chromosomes,
         ),
-        "qc/vcf_stats/all.filtered.bcftools_stats.txt",
+        *(["qc/vcf_stats/all.filtered.bcftools_stats.txt"] if vcf_output_mode != "per_contig" else []),
     output:
         "qc/multiqc.html",
         directory("qc/multiqc_data"),
@@ -65,13 +65,13 @@ use rule multiqc as multiqc_HC with:
         ),
         expand(
             "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt",
-            chrom=config["chromosomes"],
+            chrom=chromosomes,
         ),
         expand(
             "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt",
-            chrom=config["chromosomes"],
+            chrom=chromosomes,
         ),
-        "qc/vcf_stats/all.filtered.bcftools_stats.txt",
+        *(["qc/vcf_stats/all.filtered.bcftools_stats.txt"] if vcf_output_mode != "per_contig" else []),
     output:
         "qc/multiqc.html",
         directory("qc/multiqc_data"),

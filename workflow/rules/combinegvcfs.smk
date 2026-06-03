@@ -19,7 +19,7 @@ rule combine_gvcfs:
         gvcfs=expand(
             "calls/{sample}.{chrom}.g.vcf.gz",
             sample=samples.index,
-            chrom=config["chromosomes"],
+            chrom=chromosomes,
         ),
         ref=reference_file,
     output:

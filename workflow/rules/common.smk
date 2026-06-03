@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 
 # from snakemake.utils import validate
@@ -28,21 +30,73 @@ units = units.sort_index()
 # Increase performance - avoid warnings: "indexing past lexsort depth may impact performance"
 
 
+##### Contig list resolution #####
+
+
+def get_chromosomes(config):
+    """Build contig list at parse time from config.
+    Supports backwards-compatible plain list, manual list under chromosomes.list,
+    or auto-detection from the reference .fai with optional size and name filters.
+    """
+    chrom_cfg = config.get("chromosomes", {})
+
+    # Backwards compat: chromosomes was previously a plain YAML list
+    if isinstance(chrom_cfg, list):
+        return chrom_cfg
+
+    if not chrom_cfg.get("auto", False):
+        contigs = chrom_cfg.get("list", [])
+        if not contigs:
+            raise ValueError(
+                "chromosomes.auto is false but chromosomes.list is empty. "
+                "Add contig names under chromosomes.list or set auto: true."
+            )
+        return contigs
+
+    # Auto-detect from .fai
+    fai_path = config["refs"]["index"]
+    fai = pd.read_table(
+        fai_path,
+        header=None,
+        names=["name", "length", "offset", "linebases", "linewidth"],
+        usecols=[0, 1],
+    )
+    fai.columns = ["name", "length"]
+    contigs = fai["name"].tolist()
+    lengths = dict(zip(fai["name"], fai["length"]))
+
+    min_size = chrom_cfg.get("min_size", 0)
+    if min_size:
+        contigs = [c for c in contigs if lengths[c] >= min_size]
+
+    pattern = chrom_cfg.get("pattern", "")
+    if pattern:
+        contigs = [c for c in contigs if re.match(pattern, c)]
+
+    if not contigs:
+        raise ValueError(
+            f"No contigs remain after filtering (fai: {fai_path}). "
+            f"Check chromosomes.min_size ({min_size}) and chromosomes.pattern ('{pattern}')."
+        )
+
+    return contigs
+
+
+chromosomes = get_chromosomes(config)
+
+vcf_output_mode = (
+    config["chromosomes"].get("vcf_output", "both")
+    if isinstance(config["chromosomes"], dict)
+    else "both"
+)
+
+
 ##### Wildcard constraints #####
 wildcard_constraints:
     vartype="snvs|indels",
-    sample="|".join(samples.index),  # output: 'A|B|C|D|E'
-    unit="|".join(units.index.get_level_values("unit").unique()),  # output: 'L1|L2'
-    chrom="|".join(config["chromosomes"]),  # output: 'NC_085136.1|NC_085137.1|...'
-
-
-##### Helper functions #####
-
-
-# contigs in reference genome
-def get_contigs():
-    with checkpoints.genome_faidx.get().output[0].open() as fai:
-        return pd.read_table(fai, header=None, usecols=[0], squeeze=True, dtype=str)
+    sample="|".join(samples.index),
+    unit="|".join(units.index.get_level_values("unit").unique()),
+    chrom="|".join(chromosomes),
 
 
 def get_fastq(wildcards):
