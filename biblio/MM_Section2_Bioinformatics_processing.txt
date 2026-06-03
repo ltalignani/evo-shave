@@ -1,0 +1,129 @@
+2. Bioinformatics processing
+
+All raw Illumina sequencing reads were processed through EVOSHAVE v3 (SHort-read Alignment pipeline
+for VEctor genomes; https://github.com/ltalignani/EVOSHAVE), a modular Snakemake-based (v8.9.0;
+Mölder et al., 2021) bioinformatics pipeline implementing GATK Best Practices (DePristo et al., 2011)
+for short-read alignment and variant discovery. All software dependencies were managed through isolated
+Conda environments, ensuring full reproducibility. The pipeline was deployed on the Institut Français
+de Bioinformatique (IFB) Core cluster, a national French bioinformatics high-performance computing
+infrastructure, using the SLURM workload manager with automatic retry logic (up to five retries with
+incrementally scaled memory allocation) to handle transient resource failures. This pipeline was applied uniformly to all 109 samples, including the 74 samples from Celemin et al.
+(2023) for which raw FASTQ files were retrieved from NCBI using their associated SRA metadata and
+reprocessed from scratch, ensuring methodological consistency across the entire dataset. Three
+outgroup species were processed in the same manner: one beluga whale (Delphinapterus leucas; Del_leu;
+GenBank accession: [to be added]), one narwhal (Monodon monoceros; Mon_mon; GenBank accession: [to be
+added]), and one killer whale (Orcinus orca; O_o_19) sequenced de novo for this study. All three
+outgroups were aligned to the filtered mPhoPho1.1 harbour porpoise reference genome to enable
+consistent cross-species variant calling and phylogenetic rooting.
+
+Read quality control and adapter trimming. The quality of raw reads was first assessed with FastQC
+(v0.12.1; Andrews, 2010). Paired-end reads were subsequently trimmed using Trimmomatic (v0.39; Bolger
+et al., 2014) in paired-end mode with Phred+33 base quality encoding. The following trimming steps
+were applied sequentially: adapter removal using standard Illumina TruSeq2 paired-end adapter
+sequences (ILLUMINACLIP, seed mismatches = 2, palindrome clip threshold = 30, simple clip threshold =
+15); removal of leading bases with quality below 20 (LEADING:20); removal of trailing bases with
+quality below 3 (TRAILING:3); sliding-window quality trimming over a 5-base window with a minimum
+average quality of 20 (SLIDINGWINDOW:5:20); discarding reads with a mean quality score below 20
+(AVGQUAL:20); and discarding reads shorter than 50 bp after trimming (MINLEN:50). Read pairs in which
+one mate was entirely removed during trimming were discarded from paired-end analysis.
+
+Reference genome and read alignment. The harbour porpoise (Phocoena phocoena) reference genome
+assembly mPhoPho1.1 (GenBank: GCA_963924675.1) was filtered to retain only the 21 autosomes and the
+X chromosome, excluding unplaced scaffolds and organellar sequences. BWA indices were pre-built using
+'bwa index'. Trimmed paired-end reads were aligned to this filtered reference using BWA-MEM (v0.7.18;
+Li & Durbin, 2009) with 16 threads. The -M flag was set to mark supplementary split-hit alignments as
+secondary, ensuring compatibility with downstream Picard tools. The minimum alignment score output
+threshold was set to zero (-T 0) to retain all alignments at this stage, with downstream filtering at
+a mapping quality threshold of MapQ >= 30 applied in subsequent analyses. Sample identity and
+sequencing platform were embedded into the alignment file via read group (@RG) tags specifying the
+read group identifier (ID), sample name (SM), and sequencing platform (PL). Alignments were
+coordinate-sorted and indexed by piping output to Picard SortSam (v3.3.0; Broad Institute, 2019) with
+--CREATE_INDEX TRUE.
+
+BAM merging. For samples sequenced across multiple lanes or sequencing runs, per-lane
+coordinate-sorted BAM files were merged into a single BAM file per sample using Picard MergeSamFiles
+(v3.3.0) with coordinate sorting and multi-threaded processing enabled (--USE_THREADING true). Samples
+with a single sequencing unit were carried forward directly.
+
+Duplicate marking and BAM polishing. Optical and PCR duplicate reads were identified and flagged
+using Picard MarkDuplicates (v3.3.0) with --REMOVE_DUPLICATES FALSE, preserving duplicates in the BAM
+file while marking them for downstream exclusion. The NM (edit distance to reference), MD (base
+mismatch string), and UQ (Phred-scaled likelihood of the read segment) alignment tags were
+subsequently recomputed relative to the reference genome using Picard SetNmMdAndUqTags (v3.3.0).
+Final BAM integrity was verified using Picard ValidateSamFile (v3.3.0) in SUMMARY mode.
+
+Alignment quality control. Per-sample alignment statistics were computed with SAMtools stats (v1.21;
+Danecek et al., 2021), using the reference genome to enable accurate mismatch reporting. Genome-wide
+coverage distribution, mean depth, and mapping quality metrics were assessed using Qualimap bamqc
+(v2.2.2b; Okonechnikov et al., 2016) with 8 threads. All per-sample quality control reports --
+including FastQC results, duplicate metrics, alignment statistics, and Qualimap outputs -- were
+aggregated into a unified interactive report using MultiQC (v1.27; Ewels et al., 2016).
+
+BAM post-processing and parallel workflows. Following duplicate marking, the pipeline split into two
+parallel branches to produce distinct BAM outputs tailored to different downstream analyses.
+
+In the first branch, the deduplicated BAM files were used directly as input for per-sample,
+per-chromosome variant calling with GATK HaplotypeCaller (v4.6.1.0; McKenna et al., 2010). This
+approach is appropriate because HaplotypeCaller performs local de novo haplotype reassembly
+internally, rendering an explicit prior indel realignment step unnecessary. HaplotypeCaller was run in
+GVCF mode (--emit-ref-confidence GVCF) with --output-mode EMIT_ALL_CONFIDENT_SITES to report both
+variant and high-confidence reference sites. Processing each chromosome independently enabled full
+parallelisation across compute nodes. Per-sample GVCF files were consolidated per chromosome into a
+GenomicsDB data store using GATK GenomicsDBImport (v4.6.1.0). Joint genotyping across all samples was
+then performed with GATK GenotypeGVCFs (v4.6.1.0) using the --include-non-variant-sites flag to
+preserve reference genotype calls in the multi-sample VCF output. Base quality score recalibration
+(BQSR) and variant quality score recalibration (VQSR) were not applied, as no validated variant
+databases are currently available for Phocoena phocoena. Hard-filter thresholds following GATK
+recommendations were applied to flag low-quality variants: for SNVs, sites were filtered if QD < 2.0,
+FS > 60.0, MQ < 40.0, MQRankSum < -12.5, or ReadPosRankSum < -8.0; for indels, the thresholds were
+QD < 2.0, FS > 200.0, or ReadPosRankSum < -20.0.
+
+In the second branch, the deduplicated BAM files were polished and locally realigned around indels to
+produce high-quality BAMs for genotype likelihood-based analyses performed with ANGSD (see below). The
+NM, MD, and UQ alignment tags were first recomputed using Picard SetNmMdAndUqTags (v3.3.0). Indel
+realignment target intervals were then identified per sample using GATK3 RealignerTargetCreator (v3.8;
+8 threads, --defaultBaseQualities 20 --filter_reads_with_N_cigar), and local realignment was carried
+out with GATK3 IndelRealigner (--defaultBaseQualities 20 --filter_reads_with_N_cigar). The realigned
+BAM files were sorted by query name using Picard SortSam (v3.3.0), mate-pair information was
+corrected with Picard FixMateInformation (v3.3.0), and BAMs were re-sorted by coordinate with Picard
+SortSam (v3.3.0) prior to use in downstream analyses.
+
+
+--------------------------------------------------------------------------------
+REFERENCES (section 2)
+--------------------------------------------------------------------------------
+
+Andrews S. (2010). FastQC: a quality control tool for high throughput sequence data.
+  Available at: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+
+Bolger A.M., Lohse M. & Usadel B. (2014). Trimmomatic: a flexible trimmer for Illumina sequence
+  data. Bioinformatics, 30(15): 2114-2120.
+
+Broad Institute (2019). Picard toolkit.
+  Available at: https://broadinstitute.github.io/picard/
+
+Danecek P., Bonfield J.K., Liddle J., Marshall J., Ohan V., Pollard M.O., Whitwham A., Keane T.,
+  McCarthy S.A., Davies R.M. & Li H. (2021). Twelve years of SAMtools and BCFtools.
+  GigaScience, 10(2): giab008.
+
+DePristo M.A., Banks E., Poplin R., Garimella K.V., Maguire J.R., Hartl C., Philippakis A.A.,
+  del Angel G., Rivas M.A., Hanna M. et al. (2011). A framework for variation discovery and
+  genotyping using next-generation DNA sequencing data. Nature Genetics, 43(5): 491-498.
+
+Ewels P., Magnusson M., Lundin S. & Kaller M. (2016). MultiQC: summarize analysis results for
+  multiple tools and samples in a single report. Bioinformatics, 32(19): 3047-3048.
+
+Li H. & Durbin R. (2009). Fast and accurate short read alignment with Burrows-Wheeler Aligner.
+  Bioinformatics, 25(14): 1754-1760.
+
+McKenna A., Hanna M., Banks E., Sivachenko A., Cibulskis K., Kernytsky A., Garimella K.,
+  Altshuler D., Gabriel S., Daly M. & DePristo M.A. (2010). The Genome Analysis Toolkit: a
+  MapReduce framework for analyzing next-generation DNA sequencing data.
+  Genome Research, 20(9): 1297-1303.
+
+Mölder F., Jablonski K.P., Letcher B., Hall M.B., Tomkins-Tinch C.H., Sochat V., Forster J.,
+  Lee S., Twardziok S.O., Kanitz A. et al. (2021). Sustainable data analysis with Snakemake.
+  F1000Research, 10: 33.
+
+Okonechnikov K., Conesa A. & Garcia-Alcalde F. (2016). Qualimap 2: advanced multi-sample quality
+  control for high-throughput sequencing data. Bioinformatics, 32(2): 292-294.

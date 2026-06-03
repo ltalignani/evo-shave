@@ -1,4 +1,5 @@
 .snakemake
+.claude
 .DS_Store
 resources/genomes/
 resources/indexes/

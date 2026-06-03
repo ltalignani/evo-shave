@@ -31,20 +31,24 @@ trimmomatic:
 
 ### REFERENCE ----------------------------------------------------------------------------------------
 refs:
-  ref_name: "mPhoPho1.1_filtered.fasta"
+  ref_name: "resources/genomes/AalbF5_filtered.fasta"
   path: "resources/genomes/" # Path to genomes references
-  reference: "resources/genomes/mPhoPho1.1_filtered.fasta" # Your reference, in fasta format
+  reference: "resources/genomes/AalbF5_filtered.fasta" # Your reference, in fasta format
   ## Available options:
   ## 'resources/genomes/AalbF5_filtered.fasta'                                      # AalbF5
   ## 'resources/genomes/Anopheles-gambiae-PEST_CHROMOSOMES_AgamP4.fa'               # AgamP4
-  index: "resources/genomes/mPhoPho1.1_filtered.fasta.fai" # index, obtained with samtools faidx
-  dict: "resources/genomes/mPhoPho1.1_filtered.dict" # Dictionary obtained with picard CreateSequenceDictionary
+  ## 'resources/genomes/mPhoPho1.1_filtered.fasta'                                  # Phocoena phocoena 1.1
+  ## 'resources/genomes/mOrcOrc1.1_genomic_filtered.fasta'                          # Orcinus orca 1.1
+  index: "resources/genomes/AalbF5_filtered.fasta.fai" # index, obtained with samtools faidx
+  dict: "resources/genomes/AalbF5_filtered.dict" # Dictionary obtained with picard CreateSequenceDictionary
 
 ### MARK DUPLICATES ----------------------------------------------------------------------------------------
 markdup:
+  skip: false          # Set to true for ddRAD-seq (reads share coordinates, markdup is unreliable)
   remove-duplicates: false
 
 ### GATK ---------------------------------------------------------------------------------------------
+enable_variant_calling: true # Set to false to skip variant calling steps
 caller: "HaplotypeCaller" # "UnifiedGenotyper" or "HaplotypeCaller"
 
 gatk:
@@ -60,28 +64,10 @@ gatk:
 
 ### CHROMOSOMES --------------------------------------------------------------------------------------
 chromosomes:
-  - "1"
-  - "2"
-  - "3"
-  - "4"
-  - "5"
-  - "6"
-  - "7"
-  - "8"
-  - "9"
-  - "10"
-  - "11"
-  - "12"
-  - "13"
-  - "14"
-  - "15"
-  - "16"
-  - "17"
-  - "18"
-  - "19"
-  - "20"
-  - "21"
-  - "X"
+  - "NC_085136.1"
+  - "NC_085137.1"
+  - "NC_085138.1"
+  - "NC_006817.1"
 
 ### VCF FILTERING ------------------------------------------------------------------------------------
 filtering:

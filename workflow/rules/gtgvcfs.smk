@@ -17,9 +17,9 @@ rule genotype_gvcfs:
         runtime=2880,
         tmpdir=config["resources"]["tmpdir"],
     input:
-        gvcf=lambda wildcards: f"calls/all.{{wildcards.chrom}}.g.vcf.gz",
+        db_done="calls/db.{chrom}/.done",
         ref=reference_file,
-        intervals=lambda wildcards: wildcards.chrom,  # Utilisation correcte des intervalles
+        intervals=lambda wildcards: wildcards.chrom,
     output:
         "calls/all.{chrom}.vcf.gz",
     log:
@@ -27,16 +27,18 @@ rule genotype_gvcfs:
     params:
         extra="--include-non-variant-sites",
         java_opts="-XX:ParallelGCThreads=10",
+        db_dir=lambda wildcards: f"calls/db.{wildcards.chrom}",
     conda:
         "envs/gatk4.yaml"
     shell:
         """
-        gatk --java-options "-Xmx{{resources.mem_mb}}m" GenotypeGVCFs \
+gatk --java-options \"-Xmx{{resources.mem_mb}}m\" GenotypeGVCFs \
             -R {input.ref} \
-            -V {input.gvcf} \
+            -V gendb://{params.db_dir} \
             -L {input.intervals} \
             {params.extra} \
             --tmp-dir {resources.tmpdir} \
             -O {output} \
             &> {log}
         """
+

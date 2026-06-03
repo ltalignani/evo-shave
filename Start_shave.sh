@@ -2,12 +2,12 @@
 ###################configuration slurm##############################
 #SBATCH -A invalbo
 #SBATCH --job-name=evoshave
-#SBATCH --time=2-23:00:00
+#SBATCH --time=5-23:00:00
 #SBATCH -p long
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH --cpus-per-task 1
-#SBATCH --mem=8G
+#SBATCH --mem=4G
 #SBATCH -o Cluster_logs/%x-%j-%N.out
 #SBATCH -e Cluster_logs/%x-%j-%N.err
 #SBATCH --mail-user=loic.talignani@ird.fr
@@ -32,7 +32,7 @@ echo -e "Load Modules:"
 echo ""
 
 module purge
-module load snakemake/8.9.0
+module load snakemake/8.27.1
 module load conda
 
 # set umask to avoid locking each other out of directories
@@ -68,28 +68,64 @@ echo ""
 # Dossier contenant les fichiers FastQ à renommer
 input_directory="raw"
 
-# Parcours des fichiers .fq.gz dans le répertoire
-for file in "$input_directory"/*.fq.gz; do
-    # Extraction des différentes parties du nom du fichier
+# Parcours des fichiers .fq.gz et .fastq.gz dans le répertoire
+for file in "$input_directory"/*.fq.gz "$input_directory"/*.fastq.gz; do
+    [ -e "$file" ] || continue
+
     filename=$(basename "$file")
-    prefix=$(echo "$filename" | cut -d'_' -f1)  # Première partie avant le premier underscore
-    lane=$(echo "$filename" | grep -oP 'L\d+')  # Le numéro de lane L suivi d'un chiffre
-    fastq_num=$(echo "$filename" | grep -oP '_\d+' | tr -d '_')  # Le numéro de fastq après le second underscore (1 ou 2)
-    
-    # Conversion du numéro de fastq (1 -> R1, 2 -> R2)
-    if [ "$fastq_num" == "1" ]; then
-        fastq_read="R1"
-    elif [ "$fastq_num" == "2" ]; then
-        fastq_read="R2"
+
+    # Skip si déjà au bon format {sample}_L{n}_R{1|2}.fastq.gz
+    if [[ "$filename" =~ ^.+_L[0-9]+_R[12]\.fastq\.gz$ ]]; then
+        echo "Déjà correct : $filename"
+        continue
     fi
-    
-    # Construction du nouveau nom de fichier
+
+    # Retirer l'extension pour obtenir la base
+    base="${filename%.fq.gz}"
+    base="${base%.fastq.gz}"
+
+    # Extraire le read_part (dernier champ après le dernier _)
+    read_part="${base##*_}"
+
+    # Normaliser en R1 ou R2 (accepte 1, 2, R1, R2)
+    case "$read_part" in
+        1|R1) fastq_read="R1" ;;
+        2|R2) fastq_read="R2" ;;
+        *)
+            echo "WARN: Impossible de déterminer le numéro de read pour $filename — fichier ignoré"
+            continue
+            ;;
+    esac
+
+    # Retirer le read_part pour obtenir prefix_lane
+    prefix_lane="${base%_${read_part}}"
+
+    # Chercher un identifiant de lane (_L suivi de chiffres, ancré sur _ pour éviter faux positifs)
+    lane=$(echo "$prefix_lane" | grep -oE '_L[0-9]+' | tail -1 | sed 's/^_//')
+
+    if [ -n "$lane" ]; then
+        prefix="${prefix_lane%_${lane}}"
+    else
+        lane="L1"
+        prefix="$prefix_lane"
+    fi
+
+    # Construire le nouveau nom
     new_filename="${prefix}_${lane}_${fastq_read}.fastq.gz"
-    
-    # Renommage du fichier
-    mv "$file" "$input_directory/$new_filename"
-    
-    echo "Renommé : $filename -> $new_filename"
+
+    # Vérifier si la cible existe déjà
+    if [ -f "$input_directory/$new_filename" ]; then
+        counter=1
+        while [ -f "$input_directory/${prefix}_${lane}_${fastq_read}_dup${counter}.fastq.gz" ]; do
+            ((counter++))
+        done
+        dup_filename="${prefix}_${lane}_${fastq_read}_dup${counter}.fastq.gz"
+        echo "WARN: $new_filename existe déjà — renommage de $filename en $dup_filename"
+        mv "$file" "$input_directory/$dup_filename"
+    else
+        mv "$file" "$input_directory/$new_filename"
+        echo "Renommé : $filename -> $new_filename"
+    fi
 done
 
 echo ""
@@ -112,41 +148,43 @@ echo -e "########### SNAKEMAKE PIPELINE START ###########"
 echo -e "------------------------------------------------------------------------"
 echo ""
 
+# Suppress pkg_resources deprecation warning (setuptools >= 81 / snakemake 8.9.0)
+export PYTHONWARNINGS="ignore::UserWarning:pkg_resources"
+
 echo -e "Unlocking working directory:"
 echo ""
 
-snakemake --workflow-profile profile --directory ${workdir}/ --unlock
+snakemake --workflow-profile profile --directory ${workdir}/ --unlock 2>&1
 
 echo ""
 echo -e "List conda envs:"
 echo ""
 
-snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --list-conda-envs
+snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --list-conda-envs 2>&1
 
 echo ""
 echo -e "Conda environments update:"
 echo ""
 
-snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --conda-cleanup-envs
+snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --conda-cleanup-envs 2>&1
 
 echo ""
 echo -e "Conda environments setup:"
 echo ""
 
-snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --conda-create-envs-only  
+snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --conda-create-envs-only 2>&1
 
 echo ""
 echo -e "Dry Run:"
 echo ""
 
-
-snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --prioritize create_directories --dry-run
+snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --prioritize create_directories --dry-run 2>&1
 
 echo ""
 echo -e "Let's Run!"
 echo ""
 
-snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --prioritize create_directories --retries 5 --local-cores 8
+snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --prioritize create_directories --retries 5 --local-cores 8 2>&1
 
 ###### Create usefull graphs, summary and logs ######
 echo ""
@@ -164,11 +202,11 @@ extention_list="pdf png"
 
 for graph in ${graph_list} ; do
     for extention in ${extention_list} ; do
-	snakemake --workflow-profile profile --keep-going --rerun-incomplete --directory ${workdir}/ --${graph} | dot -T${extention} > ${workdir}/graphs/${graph}.${extention} ;
+	snakemake --workflow-profile profile --keep-going --rerun-incomplete --directory ${workdir}/ --${graph} 2>/dev/null | dot -T${extention} > ${workdir}/graphs/${graph}.${extention} ;
     done
 done
 
-snakemake --workflow-profile profile --keep-going --rerun-incomplete --directory ${workdir} --summary > ${workdir}/files_summary.txt
+snakemake --workflow-profile profile --keep-going --rerun-incomplete --directory ${workdir} --summary > ${workdir}/files_summary.txt 2>&1
 
 ###### End managment ######
 echo ""

@@ -20,6 +20,7 @@ rule genomics_db_import:
         ),
     output:
         db=directory("calls/db.{chrom}"),
+        done=touch("calls/db.{chrom}/.done"),
     log:
         "logs/gatk4/genomicsdbimport/genomicsdbimport.{chrom}.log",
     params:

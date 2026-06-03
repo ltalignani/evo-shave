@@ -3,7 +3,7 @@ import pandas as pd
 # from snakemake.utils import validate
 from snakemake.utils import min_version
 
-min_version("8.9.0")
+min_version("8.27.1")
 
 
 report: "../report/workflow.rst"
@@ -33,6 +33,7 @@ wildcard_constraints:
     vartype="snvs|indels",
     sample="|".join(samples.index),  # output: 'A|B|C|D|E'
     unit="|".join(units.index.get_level_values("unit").unique()),  # output: 'L1|L2'
+    chrom="|".join(config["chromosomes"]),  # output: 'NC_085136.1|NC_085137.1|...'
 
 
 ##### Helper functions #####
@@ -59,9 +60,12 @@ def is_single_end(sample, unit):
 
 def get_read_group(wildcards):
     """Denote sample name and platform in read group."""
-    return r"-R '@RG\tID:{sample}\tSM:{sample}\tPL:{platform}'".format(
-        sample=wildcards.sample,
-        platform=units.loc[(wildcards.sample, wildcards.unit), "platform"],
+    return (
+        r"-R '@RG\tID:{sample}_{unit}\tSM:{sample}\tLB:{sample}\tPL:{platform}'".format(
+            sample=wildcards.sample,
+            unit=wildcards.unit,
+            platform=units.loc[(wildcards.sample, wildcards.unit), "platform"],
+        )
     )
 
 
@@ -85,18 +89,6 @@ def get_sample_bams(wildcards):
         sample=wildcards.sample,
         unit=units.loc[wildcards.sample].unit,
     )
-
-
-# Fonction pour déterminer si un échantillon a plusieurs BAMs
-def get_bam_list(wildcards):
-    units_sample = units.loc[wildcards.sample]["unit"] # return a list of units: [L1, L8]
-    if isinstance(units_sample, str): 
-        # Si un seul BAM, retourne une liste contenant le fichier BAM unique
-        return [f"mapped/{wildcards.sample}_{units_sample}_sorted.bam"]
-    else:
-        # Retourne une liste de fichiers BAM à fusionner si plusieurs unités
-        return [f"mapped/{wildcards.sample}_{unit}_sorted.bam" for unit in units_sample]
-
 
 # def get_regions_param(regions=config["processing"].get("restrict-regions"), default=""):
 #     if regions:

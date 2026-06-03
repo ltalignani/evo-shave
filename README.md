@@ -1,7 +1,7 @@
-SHAVE: SHort-read Alignment pipeline for VEctors 
+SHAVE: SHort-read Alignment pipeline for VEctors
 ==================================================================================================================
 
-![MacOS](https://badgen.net/badge/icon/Sequoia%20(15.0)%20%7C%20Sonoma%20(14.7)%20%7C%20Ventura%20(13.7)%20%7C%20Monterey%20(12.7.6)/E6055C?icon=apple&label&list=%7C&scale=0.9) ![GNU/Linux](https://badgen.net/badge/icon/Focal%20Fossa%20(20.04)%20%7C%20Jammy%20Jellyfish%20(22.04)/772953?icon=https://www.svgrepo.com/show/25424/ubuntu-logo.svg&label&list=%7C&scale=0.9) ![Open Source](https://badgen.net/badge/icon/Open%20Source/purple?icon=https://upload.wikimedia.org/wikipedia/commons/4/44/Corazón.svg&label&scale=0.9) ![GNU AGPL v3](https://badgen.net/badge/Licence/GNU%20AGPL%20v3/grey?scale=0.9) ![Github](https://badgen.net/badge/icon/Github/?icon=gitlab&label&scale=0.9) ![Bash](https://badgen.net/badge/icon/Bash%205.1.16/black?icon=terminal&label&scale=0.9) ![Python](https://badgen.net/badge/icon/Python%203.12/black?icon=https://upload.wikimedia.org/wikipedia/commons/0/0a/Python.svg&label&scale=0.9) ![Snakemake](https://badgen.net/badge/icon/Snakemake%20(8.20)%20%7C%20(8.9.0)/green?icon=https://upload.wikimedia.org/wikipedia/commons/d/d3/Python_icon_(black_and_white).svg&label&scale=0.9) ![Conda](https://badgen.net/badge/icon/Conda%20(23.11.0)%20%7C%20Mamba%20(1.5.5)/black?icon=codacy&label&scale=0.9)
+![macOS](https://badgen.net/badge/icon/Sequoia%20(15.0)%20%7C%20Sonoma%20(14.7)%20%7C%20Ventura%20(13.7)%20%7C%20Monterey%20(12.7.6)/E6055C?icon=apple&label&list=%7C&scale=0.9) ![GNU/Linux](https://badgen.net/badge/icon/Focal%20Fossa%20(20.04)%20%7C%20Jammy%20Jellyfish%20(22.04)/772953?icon=https://www.svgrepo.com/show/25424/ubuntu-logo.svg&label&list=%7C&scale=0.9) ![Open Source](https://badgen.net/badge/icon/Open%20Source/purple?icon=https://upload.wikimedia.org/wikipedia/commons/4/44/Corazón.svg&label&scale=0.9) ![GNU AGPL v3](https://badgen.net/badge/Licence/GNU%20AGPL%20v3/grey?scale=0.9) ![Github](https://badgen.net/badge/icon/Github/?icon=gitlab&label&scale=0.9) ![Bash](https://badgen.net/badge/icon/Bash%205.1.16/black?icon=terminal&label&scale=0.9) ![Python](https://badgen.net/badge/icon/Python%203.12/black?icon=https://upload.wikimedia.org/wikipedia/commons/0/0a/Python.svg&label&scale=0.9) ![Snakemake](https://badgen.net/badge/icon/Snakemake%20(8.20)%20%7C%20(8.9.0)/green?icon=https://upload.wikimedia.org/wikipedia/commons/d/d3/Python_icon_(black_and_white).svg&label&scale=0.9) ![Conda](https://badgen.net/badge/icon/Conda%20(23.11.0)%20%7C%20Mamba%20(1.5.5)/black?icon=codacy&label&scale=0.9)
 
 \~ ABOUT \~
 -----------
@@ -9,8 +9,7 @@ SHAVE: SHort-read Alignment pipeline for VEctors
 SHAVE is a bioinformatics pipeline designed for **alignment and variant calling of mosquitoe genomes** (*Aedes* and *Anopheles*) using Illumina® short-reads, based on GATK® Best Practices (excluding the BQSR and VQSR steps, as explained below) and the [MalariaGEN pipelines](https://github.com/malariagen/pipelines).
 In brief, SHAVE reports quality reads, removes adapters, aligns reads to a reference genome, marks duplicates, corrects bam tags (NM, MD, UQ), validates BAM files according to SAM/BAM specifications, and reports statistics.
 SHAVE utilizes **GATK4® HaplotypeCaller** to call variants and genotype likelihoods, but it can also use **GATK3® UnifiedGenotyper** instead. SHAVE was created to adhere to the parameters of the **MalariaGEN pipelines** (phases 2 and 3), enabling variant and genotype calling under the same conditions used in the *1000 Genomes Anopheles gambiae project*. When using GATK3® UnifiedGenotyper, SHAVE adds indel realignment step before UnifiedGenotyper to call variants and genotypes, as done by MalariaGEN.
-This pipeline considers practical realities. It can be run on a **local machine** or on a **cluster under slurm workload manager** 
-
+This pipeline considers practical realities. It can be run on a **local machine** or on a **cluster under slurm workload manager**
 
 **Note about BQSR and VQSR :**
 
@@ -26,48 +25,45 @@ In essence, it is a sophisticated filtering technique applied to the variant cal
 
 The key point is that it uses known, highly validated variant resources (such as Omni, 1000 Genomes, and HapMap) to select a subset of variants within our callset that we are confident are true positives (the training set). Unfortunately, no highly validated variant resource is available for *Aedes* at this time, so we decided to apply hard-filtering and leave the choice of parameters to the user. SHAVE extracts some information from the raw VCF to help in choosing the right parameters.
 
-
 ### Features
 
 **SHAVE pipeline:**
 
--   Control reads quality (**fastQC** and **multiQC html report**),
+- Control reads quality (**fastQC** and **multiQC html report**),
 
--   Trim adapters
+- Trim adapters
 
--   Align reads (*sam files*),
+- Align reads (*sam files*),
 
--   Convert sam into bam format and sort by coordinates,
+- Convert sam into bam format and sort by coordinates,
 
--   Mark duplicates to BAM files,
+- Mark duplicates to BAM files,
 
--   Correct MD, NM and UQ tags into BAM files,
+- Correct MD, NM and UQ tags into BAM files,
 
--   Validate BAM file according to SAM/BAM specifications,
+- Validate BAM file according to SAM/BAM specifications,
 
--   Creates an Indels interval list if UnifiedGenotyper have been selected,
+- Creates an Indels interval list if UnifiedGenotyper have been selected,
 
--   Create a .bed file to view the realignments in a genome viewer (IGV),
+- Create a .bed file to view the realignments in a genome viewer (IGV),
 
--   Realign Indels,
+- Realign Indels,
 
--   Index realigned bam,
+- Index realigned bam,
 
--   Stats on bam,
+- Stats on bam,
 
--   Variant calling on each sample (*vcf files*),
+- Variant calling on each sample (*vcf files*),
 
--   Genotyping,
+- Genotyping,
 
--   VCF compression,
+- VCF compression,
 
--   Variant filtering
-
- 
+- Variant filtering
 
 ### Version
 
-*V3.2025.01.30*
+*V4.2026.06.03*
 
 ### Directed Acyclic Graph
 
@@ -79,19 +75,18 @@ The key point is that it uses known, highly validated variant resources (such as
 
 <img src="./visuals/dag_HC.png" width="1200" height="400">  
 
-
 \~ INSTALLATIONS \~
 -------------------
 
-### Conda _(dependencies)_ ###
+### Conda *(dependencies)* ###
 
 SHAVE utilizes the powerful **Conda or mamba** environment manager.
-Therefore, if and only if _(Conda is not already installed)_, please install **Conda | mamba** first!
+Therefore, if and only if *(Conda is not already installed)*, please install **Conda | mamba** first!
 
- 
 **Download** and **install** the version of the [Latest Miniconda Installer](https://docs.conda.io/en/latest/miniconda.html#latest-miniconda-installer-links) (23.5.2+) that is compatible with your operating system  
 
 e.g. for **Linux_x86_64-bit** or **Windows Subsystem for Linux (WSL)** systems:  
+
 ```shell
 curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o ~/Miniconda3-latest-Linux-x86_64.sh && \
 bash ~/Miniconda3-latest-Linux-x86_64.sh -b -p ~/miniconda3/ && \
@@ -102,6 +97,7 @@ exit
 ```
 
 e.g. for **MacOSX_INTEL-chips_x86_64-bit** or **MacOSX_M1/M2/M3/M4-chips_arm_64-bit (with Rosetta)** systems:  
+
 ```shell
 curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o ~/Miniconda3-latest-MacOSX-x86_64.sh && \
 bash ~/Miniconda3-latest-MacOSX-x86_64.sh -b -p ~/miniconda3/ && \
@@ -111,12 +107,12 @@ rm -f ~/Miniconda3-latest-MacOSX-x86_64.sh && \
 exit
 ```
 
-Create a specific conda environment for **Snakemake v.8**: 
+Create a specific conda environment for **Snakemake v.8**:
+
 ```shell
 conda create -c conda-forge -c bioconda -n snakemake snakemake
 conda activate snakemake
 ```
-
 
 ### SHAVE ###
 
@@ -129,6 +125,7 @@ cd ./shave/
 ```
 
 Difference between **Download** and **Clone**:  
+
 - To create a copy of a remote repository’s files on your computer, you can
 either **Download** or **Clone** the repository  
 - If you download it, you **cannot sync** the repository with the remote
@@ -147,16 +144,16 @@ git pull --verbose
 \~ USAGE \~
 -----------
 
-1.  Local machine: activate your conda environment for snakemake 
+1. Local machine: activate your conda environment for snakemake
 
-2.  Copy your **paired-end** reads in **_R{1|2}.fastq.gz** format files
+2. Copy your **paired-end** reads in **_R{1|2}.fastq.gz** format files
     into: **raw/** directory.
 
-3.  Cluster usage: Edit the slurm profile according to your slurm account and
+3. Cluster usage: Edit the slurm profile according to your slurm account and
     cluster settings (partition names, mail): edit `config.yaml` file in
     `./profiles/default/` directory. The [snakemake--executor-plugin](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html) must be installed on the cluster module.
 
-    See: 
+    See:
 
     [Dynamic Resources Allocation](https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#dynamic-resources)  
     [Slurm Profiles](https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles)  
@@ -165,18 +162,19 @@ git pull --verbose
 
     **Important**: The `Start_shave.sh` script assumes that a `snakemake` and `conda` modules are installed on your cluster. You need to edit lines 35 and 36 of this script to adjust the module names.
 
-1.  Local machine / Cluster usage: edit `config.yaml` file in `config/` directory
+4. Local machine / Cluster usage: edit `config.yaml` file in `config/` directory
 
-2.  Execute the pipeline on a local machine, use the **bash command:** 
+5. Execute the pipeline on a local machine, use the **bash command:**
 
 ```shell
 snakemake --cores 32 --software-deployment-method conda apptainer --use-conda --conda-frontend conda --prioritize create_directories --keep-going --rerun-incomplete --retries 5 --local-cores 8
 ```
-    
+
 Available options:  
-- `--cores`: change this number according to your local machine specifications.    
+
+- `--cores`: change this number according to your local machine specifications.
 - `--conda-frontend`: conda | mamba  
-- `--retries`: the number of times a job must be automatically restarted. This parameter is used to manage dynamic resources and affects both the memory usage and runtime of a rule (local) or job (cluster). If a rule/job fails, Snakemake’s internal `attempt` variable is incremented by 1 (e.g., from 1 to 2). This allows, for example, the allocated memory to be doubled when the job restarts. 
+- `--retries`: the number of times a job must be automatically restarted. This parameter is used to manage dynamic resources and affects both the memory usage and runtime of a rule (local) or job (cluster). If a rule/job fails, Snakemake’s internal `attempt` variable is incremented by 1 (e.g., from 1 to 2). This allows, for example, the allocated memory to be doubled when the job restarts.
 
 Alternatively, you can execute the `Start_shave.sh` bash script to run the pipeline on a cluster:
 
@@ -186,9 +184,9 @@ sbatch Start_shave.sh
 
 Your analyzes will start.
 
-\~ MEMORY AND RUNTIME MANAGEMENT \~ 
+\~ MEMORY AND RUNTIME MANAGEMENT \~
 
-On a local computer, if you want to control how the `--retries` option affects the memory allocation of a rule, you can adjust the get_mem_mb function for each concerned rule, located in the `workflow/rules/` directory: 
+On a local computer, if you want to control how the `--retries` option affects the memory allocation of a rule, you can adjust the get_mem_mb function for each concerned rule, located in the `workflow/rules/` directory:
 
 ```shell
 def get_mem_mb(wildcards, attempt):
@@ -197,9 +195,9 @@ def get_mem_mb(wildcards, attempt):
     return mem
 ```
 
-Change `8000` by an other value. 
+Change `8000` by an other value.
 
-On a cluster, a slurm profile, present in `profile/config.yaml` and working in conjunction with the slurm-executor-plugin package, has been created to control the partition where each job is running, the number of cpus as well as the memory and time allocated to each job. These last two parameters are controlled by the snakemake variable `attempt` : 
+On a cluster, a slurm profile, present in `profile/config.yaml` and working in conjunction with the slurm-executor-plugin package, has been created to control the partition where each job is running, the number of cpus as well as the memory and time allocated to each job. These last two parameters are controlled by the snakemake variable `attempt` :
 
 ```shell
 executor: "slurm"
@@ -241,7 +239,7 @@ set-resources:
 Jobs often fail due to insufficient memory or time allocation. To address this, SHAVE is programmed to make up to five attempts for each job, incrementing the `attempt` variable by 1 with each restart. The memory and time values specified in the slurm profile are then multiplied by the `attempt` value to ensure the job completes.
 If you need to edit this Slurm configuration file, it is strongly recommended to only modify the numerical values and not remove the `attempt` variable.
 
-see: 
+see:
 
 [Workflow profile instructions](https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles),
 [The snakemake profile project](https://github.com/snakemake-profiles/doc),
@@ -249,7 +247,7 @@ see:
 
 for more info.
 
-\~ QUALITY CONTROL \~ 
+\~ QUALITY CONTROL \~
 ----------------------
 
 Yours results are available in **qc/** directory, as follow:
@@ -263,12 +261,10 @@ Yours results are available in **qc/** directory, as follow:
 | **samtools**            | bam file statistics reports, in *txt* format                           |
 | **validatesamfile**     | bam file validation report, in *txt* format                            |
 
-
 \~ RESULTS \~
 -------------
 
 Yours results are available in **results/** directory, as follow:  
-
 
 ### 01_Trimming
 
@@ -277,8 +273,6 @@ Yours results are available in **results/** directory, as follow:
 | **XXX_trimmomatic_R1                     | 2.fastq.gz**                                                              | paired reads, without adapters and quality trimmed, in *fastq.gz* format |
 | **XXX_trimmomatic_unpaired_R2.fastq.gz** | unpaired reads without adapters and quality trimmed, in *fastq.gz* format |
 
-
-
 ### 02_Mapping
 
 | File         | Object                      |
@@ -286,9 +280,7 @@ Yours results are available in **results/** directory, as follow:
 | *sorted.bam* | Binary Alignment File       |
 | *sorted.bai* | Binary Alignment File index |
 
-
 ### 04_Polishing
-
 
 | File                           | Object                                                                                             |
 | ------------------------------ | -------------------------------------------------------------------------------------------------- |
@@ -299,8 +291,6 @@ Yours results are available in **results/** directory, as follow:
 | **realignertargetcreator.bed** | local alignment intervals in *bed* format. Use in i.e. IGV with *./resources/genomes/AalbF3.fasta* |
 | *realigned.bam*                | realigned bam files (if caller = UnifiedGenotyper in config file)                                  |
 | *_realigned_stats*             | realigned bam statistics (if caller = UnifiedGenotyper in config file)                             |
-
-
 
 ### 05_Variants
 
@@ -332,58 +322,54 @@ See or edit default settings in **config.yaml** file in **./config/** directory
 ### Resources
 
 Edit to match your hardware configuration  
+
 - **tmpdir**: for tools that can *(i.e. picard)* specify where you want the temp
 stuff *(default config: '\$TMPDIR')*
 
-
-
 ### Environments
+
 SHAVE use **conda** to set up environments. The files needed to create these environments are in the workflow/envs/ directory.
 These environments have been freezed to ensure that people using this workflow will get exactly the same environments down to the individual package builds,
-which is in fact very similar to providing the environment encapsulated in a container image. 
-A fin <pin> file have been generated for each conda environment. Snakemake will try to use the contents of that file to determine conda packages to deploy. 
-
+which is in fact very similar to providing the environment encapsulated in a container image.
+A fin <pin> file have been generated for each conda environment. Snakemake will try to use the contents of that file to determine conda packages to deploy.
 
 ### Aligner
 
-SHAVE use **BWA** to perform the alignment to the reference genome. 
-
-
+SHAVE use **BWA** to perform the alignment to the reference genome.
 
 ### Mark Duplicates program
 
 SHAVE use **picard MarkDuplicates** to perform this step. Picard works perfectly with GATK's programs. Can remove duplicates if needed *(default config)*
 
-
 ### Trimmomatic
 
--   **adapters**: link to adapters lists
+- **adapters**: link to adapters lists
 
--   **seedMisMatches**: specifies the maximum mismatch count which will still
+- **seedMisMatches**: specifies the maximum mismatch count which will still
     allow a full match to be performed
 
--   **palindromeClipTreshold**: specifies how accurate the match between the two
+- **palindromeClipTreshold**: specifies how accurate the match between the two
     'adapter ligated' reads must be for PE palindrome read alignment
 
--   **simpleClipThreshold**: specifies how accurate the match between any
+- **simpleClipThreshold**: specifies how accurate the match between any
     adapter etc. sequence must be against a read
 
--   **LeadMinTrimQual**: Cut bases off the start of a read, if below a threshold
+- **LeadMinTrimQual**: Cut bases off the start of a read, if below a threshold
     quality
 
--   **TrailMinTrimQual**: Cut bases off the end of a read, if below a threshold
+- **TrailMinTrimQual**: Cut bases off the end of a read, if below a threshold
     quality
 
--   **windowSize**: Performs a sliding window trimming approach. It starts
+- **windowSize**: Performs a sliding window trimming approach. It starts
     scanning at the 5‟ end and clips the read once the average quality within
     the window falls below a threshold
 
--   **avgMinQual**: Drop the read if the average quality is below the specified
+- **avgMinQual**: Drop the read if the average quality is below the specified
     level
 
--   **minReadLength**: Drop the read if it is below a specified length
+- **minReadLength**: Drop the read if it is below a specified length
 
--   **phred**: Convert quality scores to Phred-33 if phred-33 is selected
+- **phred**: Convert quality scores to Phred-33 if phred-33 is selected
     (default)
 
 ### Directories tree structure
@@ -458,22 +444,22 @@ SHAVE use **picard MarkDuplicates** to perform this step. Picard works perfectly
 \~ SUPPORT \~
 -------------
 
-1.  Read The Fabulous Manual!
+1. Read The Fabulous Manual!
 
-2.  Create a new issue: Issues \> New issue \> Describe your issue
+2. Create a new issue: Issues \> New issue \> Describe your issue
 
-3.  Send an email to [loic.talignani\@umontpellier.fr](url)
+3. Send an email to [loic.talignani\@umontpellier.fr](url)
 
 \~ ROADMAP \~
 -------------
 
--   Add a wiki!
--   Add a container environment with snakemake
+- Add a wiki!
+- Add a container environment with snakemake
 
 \~ AUTHORS & ACKNOWLEDGMENTS \~
 -------------------------------
 
--   Loïc TALIGNANI (Developer and Maintener)
+- Loïc TALIGNANI (Developer and Maintener)
 
 \~ CONTRIBUTING \~
 ------------------
@@ -489,6 +475,7 @@ This project is **regularly updated** and **actively maintened**
 However, you can be volunteer to step in as **developer** or **maintainer**
 
 For information about main git roles:  
+
 - **Guests** are *not active contributors* in private projects, they can only
 see, and leave comments and issues  
 - **Reporters** are *read-only contributors*, they can't write to the
@@ -549,7 +536,7 @@ code**:<https://github.com/broadinstitute/gatk>
 
 **Picard-tools**: *Broad Institute, GitHub repository (2019)* **DOI**:
 **Publication**: **Source
-code**:https://github.com/broadinstitute/picard](https://github.com/broadinstitute/picard)
+code**:<https://github.com/broadinstitute/picard>](<https://github.com/broadinstitute/picard>)
 **Documentation**:<https://broadinstitute.github.io/picard/>
 
 **The AWK Programming Language**  
