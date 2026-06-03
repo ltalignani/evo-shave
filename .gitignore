@@ -6,6 +6,7 @@ resources/indexes/
 Cluster_logs/
 benchmarks/
 resources/
+CLAUDE.md
 trimmed/
 graphs/
 mapped/
