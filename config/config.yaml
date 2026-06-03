@@ -46,7 +46,7 @@ refs:
 
 ### MARK DUPLICATES ----------------------------------------------------------------------------------------
 markdup:
-  skip: false # Set to true for ddRAD-seq (reads share coordinates, markdup is unreliable)
+  skip: true # Set to true for ddRAD-seq (reads share coordinates, markdup is unreliable)
   remove-duplicates: false
 
 ### GATK ---------------------------------------------------------------------------------------------
@@ -66,20 +66,20 @@ gatk:
 
 ### CHROMOSOMES --------------------------------------------------------------------------------------
 chromosomes:
-  auto: false         # Set to true to auto-detect contigs from reference .fai (ignores list below)
-  min_size: 0         # Minimum contig size in bp — filters out small scaffolds (0 = disabled, requires auto: true)
-  pattern: ""         # Regex to keep only matching contig names e.g. "^NC_" (empty = disabled, requires auto: true)
-  list:               # Used when auto: false
+  auto: true # Set to true to auto-detect contigs from reference .fai (ignores list below)
+  min_size: 0 # Minimum contig size in bp — filters out small scaffolds (0 = disabled, requires auto: true)
+  pattern: "" # Regex to keep only matching contig names e.g. "^NC_" (empty = disabled, requires auto: true)
+  list: # Used when auto: false
     - "NC_085136.1"
     - "NC_085137.1"
     - "NC_085138.1"
     - "NC_006817.1"
-  vcf_output: "both"  # "per_contig" | "merged" | "both"
+  vcf_output: "both" # "per_contig" | "merged" | "both"
 
 ### TRANSFER -----------------------------------------------------------------------------------------
 transfer:
-  results_dir: "/shared/projects/invalbo/results"  # Base destination directory (no trailing slash)
-  run_name: "evo-shave"                             # Prefix for result subfolder — date appended automatically
+  results_dir: "/shared/projects/invalbo/results" # Base destination directory (no trailing slash)
+  run_name: "evo-shave" # Prefix for result subfolder — date appended automatically
 
 ### VCF FILTERING ------------------------------------------------------------------------------------
 filtering:
