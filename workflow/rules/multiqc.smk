@@ -23,6 +23,15 @@ rule multiqc:
             "qc/qualimap_ug/{sample}_report/qualimapReport.html",
             sample=samples_list,
         ),
+        expand(
+            "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt",
+            chrom=config["chromosomes"],
+        ),
+        expand(
+            "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt",
+            chrom=config["chromosomes"],
+        ),
+        "qc/vcf_stats/all.filtered.bcftools_stats.txt",
     output:
         "qc/multiqc.html",
         directory("qc/multiqc_data"),
@@ -54,6 +63,15 @@ use rule multiqc as multiqc_HC with:
             "qc/qualimap_hc/{sample}_report/qualimapReport.html",
             sample=samples_list,
         ),
+        expand(
+            "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt",
+            chrom=config["chromosomes"],
+        ),
+        expand(
+            "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt",
+            chrom=config["chromosomes"],
+        ),
+        "qc/vcf_stats/all.filtered.bcftools_stats.txt",
     output:
         "qc/multiqc.html",
         directory("qc/multiqc_data"),

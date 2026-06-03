@@ -31,20 +31,22 @@ trimmomatic:
 
 ### REFERENCE ----------------------------------------------------------------------------------------
 refs:
-  ref_name: "resources/genomes/AalbF5_filtered.fasta"
-  path: "resources/genomes/" # Path to genomes references
-  reference: "resources/genomes/AalbF5_filtered.fasta" # Your reference, in fasta format
+  ref_name: "resources/genomes/GCA_018104305.1_AalbF3_genomic.fna" # Path to reference genome
+  path: "resources/genomes/" # Path to reference genome directory
+  reference: "resources/genomes/GCA_018104305.1_AalbF3_genomic.fna" # Your reference, in fasta format
   ## Available options:
-  ## 'resources/genomes/AalbF5_filtered.fasta'                                      # AalbF5
+  ## 'resources/genomes/GCA_018104305.1_AalbF3_genomic.fna'                         # AalbF3
+  ## 'resources/genomes/AalbF5_filtered.fasta'                                      # AalbF5 filtered (only 4 chroms)
+  ## 'resources/genomes/GCF_035046485.1_AalbF5_genomic.fna'                         # AalbF5 complete
   ## 'resources/genomes/Anopheles-gambiae-PEST_CHROMOSOMES_AgamP4.fa'               # AgamP4
   ## 'resources/genomes/mPhoPho1.1_filtered.fasta'                                  # Phocoena phocoena 1.1
   ## 'resources/genomes/mOrcOrc1.1_genomic_filtered.fasta'                          # Orcinus orca 1.1
-  index: "resources/genomes/AalbF5_filtered.fasta.fai" # index, obtained with samtools faidx
-  dict: "resources/genomes/AalbF5_filtered.dict" # Dictionary obtained with picard CreateSequenceDictionary
+  index: "resources/genomes/GCA_018104305.1_AalbF3_genomic.fna.fai" # index, obtained with samtools faidx
+  dict: "resources/genomes/GCA_018104305.1_AalbF3_genomic.dict" # Dictionary obtained with picard CreateSequenceDictionary
 
 ### MARK DUPLICATES ----------------------------------------------------------------------------------------
 markdup:
-  skip: false          # Set to true for ddRAD-seq (reads share coordinates, markdup is unreliable)
+  skip: false # Set to true for ddRAD-seq (reads share coordinates, markdup is unreliable)
   remove-duplicates: false
 
 ### GATK ---------------------------------------------------------------------------------------------
