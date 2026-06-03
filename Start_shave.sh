@@ -172,19 +172,19 @@ echo ""
 echo -e "Conda environments setup:"
 echo ""
 
-snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --conda-create-envs-only 2>&1
+snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend mamba --conda-create-envs-only 2>&1
 
 echo ""
 echo -e "Dry Run:"
 echo ""
 
-snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --prioritize create_directories --dry-run 2>&1
+snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend mamba --prioritize create_directories --dry-run 2>&1
 
 echo ""
 echo -e "Let's Run!"
 echo ""
 
-snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend conda --prioritize create_directories --retries 5 --local-cores 8 2>&1
+snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend mamba --prioritize create_directories --retries 5 --local-cores 8 2>&1
 
 ###### Create usefull graphs, summary and logs ######
 echo ""
