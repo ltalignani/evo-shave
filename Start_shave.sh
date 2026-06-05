@@ -54,7 +54,8 @@ echo -e "Latest Modification ___ Added merge_bam rule"
 
 # Set working directory
 workdir=$(pwd)            #$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd)
-max_threads="30"
+max_threads="500"           # High value: SLURM manages actual resources, not Snakemake
+dry_run="false"            # Set to "false" to skip dry-run
 
 echo -e "Workdir is "${workdir}
 
@@ -151,6 +152,11 @@ echo ""
 # Suppress pkg_resources deprecation warning (setuptools >= 81 / snakemake 8.9.0)
 export PYTHONWARNINGS="ignore::UserWarning:pkg_resources"
 
+# Force TMPDIR to shared storage so compute nodes don't use SLURM's per-job /tmp
+# (SLURM cleans /tmp/slurm_*/  before Snakemake's conda code can call os.remove())
+export TMPDIR=/shared/projects/invalbo/tmp/
+mkdir -p ${TMPDIR}
+
 echo -e "Unlocking working directory:"
 echo ""
 
@@ -162,29 +168,27 @@ echo ""
 
 snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --list-conda-envs 2>&1
 
-echo ""
-echo -e "Conda environments update:"
-echo ""
-
-snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --conda-cleanup-envs 2>&1
+# Conda env cleanup disabled — run manually to reclaim disk space after major workflow changes:
+# snakemake --workflow-profile profile --directory ${workdir}/ --conda-cleanup-envs
 
 echo ""
 echo -e "Conda environments setup:"
 echo ""
 
-snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend mamba --conda-create-envs-only 2>&1
+snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-create-envs-only 2>&1
 
-echo ""
-echo -e "Dry Run:"
-echo ""
-
-snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend mamba --prioritize create_directories --dry-run 2>&1
+if [ "${dry_run}" == "true" ]; then
+    echo ""
+    echo -e "Dry Run:"
+    echo ""
+    snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --jobs ${max_threads} --use-conda --prioritize create_directories --dry-run 2>&1
+fi
 
 echo ""
 echo -e "Let's Run!"
 echo ""
 
-snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-frontend mamba --prioritize create_directories --retries 5 --local-cores 8 2>&1
+snakemake --executor slurm --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --jobs ${max_threads} --use-conda --prioritize create_directories --retries 5 --local-cores 8 2>&1
 
 ###### Create usefull graphs, summary and logs ######
 echo ""

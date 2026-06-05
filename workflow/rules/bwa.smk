@@ -11,6 +11,7 @@ reference_file = config["refs"]["reference"]
 rule bwa_mem:
     message:
         "Mapping with BWA MEM for {wildcards.sample} sample of the unit {wildcards.unit}"
+    priority: 85
     resources:
         partition="fast",
         cpus_per_task=16,

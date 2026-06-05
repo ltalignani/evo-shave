@@ -1,0 +1,21 @@
+# Voir tes jobs en attente avec la RAISON exacte
+squeue --me --format="%i %j %T %R %Q %p" | sort -k5 -n
+
+# Détail d'un job spécifique (remplace JOBID)
+scontrol show job JOBID | grep -E "Reason|Priority|QOS|Partition|EligibleTime"
+
+# Vérifier si une pénalité FairShare t'est appliquée
+sshare -u ltalignani -l | grep "invalbo"
+# Output:
+invalbo                                 1    0.000590  1679251093    0.006239      0.006239              0.094623                                cpu=8569,mem=35100330,energy=+ 
+  invalbo            ltalignani          1    0.125000   375012988    0.001393      0.223322   0.011686   0.559731                                cpu=0,mem=0,energy=0,node=0,b+ 
+  invalbo            ltalignani          1    0.125000  1258602904    0.004676      0.749503   0.011624   0.166777                                cpu=8569,mem=35100330,energy=+ 
+
+# Voir ta priorité et tes composantes (FairShare + Age + QOS)
+sprio -u ltalignani -l
+# Output:
+JOBID PARTITION     USER  ACCOUNT   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION    QOSNAME        QOS        NICE                 TRES
+       66599019 long      ltaligna  invalbo   10267089          0     122609          0     116243      28237   10000000     normal          0           0                     
+
+
+

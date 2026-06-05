@@ -12,6 +12,7 @@ def get_input(wildcards):
 rule merge_bams:
     message:
         "Merging BAM files for {wildcards.sample}"
+    priority: 75
     input:
         lambda wildcards: get_input(wildcards),
     output:

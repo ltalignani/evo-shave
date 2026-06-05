@@ -5,6 +5,95 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [V4.2026.06.05] - 2026-06-05
+
+### Added
+
+#### `workflow/rules/bam_barrier.smk` — Barrier rule before variant calling (new file)
+
+A `localrule` that creates `flags/all_bams_ready.flag` once all per-sample deduplicated BAMs and their indices exist. `HaplotypeCaller` and `unifiedgenotyper` declare this flag as an input, preventing any variant-calling job from being submitted to SLURM before the entire BAM production phase completes. This avoids flooding the `long` partition queue with tens of thousands of jobs while `fast` partition BAM jobs are still pending — the root cause of rapid FairShare depletion.
+
+#### `profile/config.yaml` — Priority directives on BAM-producing rules
+
+`priority:` added to the four BAM-production rules so that Snakemake schedules them preferentially when multiple independent jobs are ready simultaneously:
+
+| Rule | Priority |
+|---|---|
+| `bwa_mem` | 85 |
+| `trimmomatic` | 80 |
+| `merge_bams` | 75 |
+| `markduplicates_bam` | 70 |
+| `all_bams_ready` | — (localrule) |
+| `HaplotypeCaller` / `unifiedgenotyper` | 0 (default) |
+
+#### `analyze_efficiency.py` — SLURM job efficiency analyser (new file)
+
+Post-pipeline script that parses `Cluster_logs/*.out` to extract SLURM job IDs and their associated Snakemake rules, queries `sacct` in a single batch call, and produces:
+
+- Per-rule summary table: P50/P95 memory and runtime, CPU efficiency
+- Top N memory outliers per rule
+- Suggested resource floors for `profile/config.yaml`
+- `profile/config_optimized.yaml` with updated floor values and traceability comments
+
+CLI options: `--mem-margin`, `--time-margin`, `--n-outliers`, `--variability-thresh`, `--profile`, `--output`.
+
+#### `analyze_efficiency.sh` — Wrapper for analyze_efficiency.py (new file)
+
+Bash wrapper that loads `module load reportseff/2.7.6` and `module load conda` before calling `analyze_efficiency.py`. Usage: `bash analyze_efficiency.sh Cluster_logs/evoshave-*.out`.
+
+#### `monitor_memory.sh` — Live memory monitoring via sstat (new file)
+
+Polls `sstat` every N seconds during pipeline execution to capture peak `MaxRSS` per running SLURM job. Maps job IDs back to Snakemake rules from the `Cluster_logs/*.out` files. Outputs a TSV (`memory_log.tsv`) for post-run analysis. Required because the cluster does not populate `MaxRSS` in `sacct` — `sstat` must be queried while jobs are running.
+
+Usage: `bash monitor_memory.sh --interval 60 --output memory_log.tsv`
+
+#### `slurm_priority_diagnostic.md` — SLURM priority diagnostic guide (new file)
+
+Reference document covering `squeue`, `sprio`, `sshare`, and `scontrol` commands for diagnosing PENDING jobs. Explains `LevelFS` interpretation, the compound FairShare penalty (account level × user level), and a decision tree for choosing between waiting, switching accounts, or requesting an admin boost.
+
+### Changed
+
+#### `profile/config.yaml` — Runtime floors reduced (calibrated from observed P95 data)
+
+All runtime floors updated from `analyze_efficiency.py` results (run 2026-06-05, P95 × 1.5 margin):
+
+| Rule | Before | After |
+|---|---|---|
+| `HaplotypeCaller` | `attempt * 180` min | `attempt * 30` min |
+| `trimmomatic` | `max(..., 300)` min | `max(..., 30)` min |
+| `bwa_mem` | `max(..., 120)` min | `max(..., 30)` min |
+| `markduplicates_bam` | `max(..., 120)` min | `max(..., 20)` min |
+| `samtools_index` | `max(..., 120)` min | `max(..., 15)` min |
+| `samtools_stats_HC` | `attempt * 120` min | `attempt * 20` min |
+| `qualimap_hc` | `attempt * 720` min | `attempt * 30` min |
+| `validatesam_HC` | `max(..., 60)` min | `max(..., 15)` min |
+| `genomics_db_import` | `attempt * 14400` min | `attempt * 720` min |
+| `genotype_gvcfs` | `attempt * 2880` min | `attempt * 360` min |
+
+#### `profile/config.yaml` — Memory floors reduced (obvious over-provisioning)
+
+Memory floor values reduced for rules where the previous values were far above typical usage. To be re-calibrated with `monitor_memory.sh` on the next run:
+
+| Rule | Before | After |
+|---|---|---|
+| `HaplotypeCaller` | 32 000 MB | 8 000 MB |
+| `genotype_gvcfs` | 128 000 MB | 16 000 MB |
+| `genomics_db_import` | 24 000 MB | 8 000 MB |
+| `markduplicates_bam` | 16 000 MB | 4 000 MB |
+| `bwa_mem` | 16 000 MB | 8 000 MB |
+| `validatesam_HC` | 16 000 MB | 4 000 MB |
+
+#### `workflow/rules/create_directories.smk` — Added `flags/` directory
+
+`flags/` added to the `mkdir -p` call so that `all_bams_ready.flag` has a parent directory on first run.
+
+#### `workflow/Snakefile` — Updated includes and localrules
+
+- `include: "rules/bam_barrier.smk"` added after `common.smk`
+- `all_bams_ready` added to `localrules`
+
+---
+
 ## [V4.2026.06.03] - 2026-06-03
 
 ### Fixed
@@ -68,6 +157,42 @@ When `markdup.skip: true` is set:
 - A substitute `markduplicates_bam` rule copies `merged/{sample}_merged.bam` directly to `dedup/{sample}_sorted_md.bam`
 - An empty metrics placeholder is created (`qc/markdup/{sample}_sorted_md_metrics.txt`) so that MultiQC does not block
 - All downstream rules (`HaplotypeCaller`, `SetNmMdAndUqTags`, `samtools_index`, `samtools_stats`, `validatesam`, `qualimap`, `multiqc`) work without modification
+
+---
+
+## [V4.2026.06.04] - 2026-06-04
+
+### Fixed
+
+#### `Start_shave.sh` — Conda environments removed on every run
+
+`--conda-cleanup-envs` was called on every pipeline launch, removing environments that Snakemake considered orphaned after workflow changes (new rules, hash changes). Environments were deleted and then rebuilt at the next run, wasting 20–30 minutes each time. Step is now commented out and documented as a manual maintenance command.
+
+#### `Start_shave.sh` / `profile/config.yaml` — Deprecated `--conda-frontend` warning
+
+`--conda-frontend mamba` triggered a deprecation warning in Snakemake 8.27+: conda now embeds libmamba natively and ignores the frontend setting. Removed from all `snakemake` calls in `Start_shave.sh` and from `profile/config.yaml`.
+
+#### `Start_shave.sh` — Conda temp file crash on compute nodes
+
+`FileNotFoundError: [Errno 2] No such file or directory: '/tmp/slurm_ltalignani_*.tmp/tmp*.yaml'` — Snakemake's conda deployment code creates a temp yaml file using Python's `tempfile` (which respects `TMPDIR`). SLURM sets `TMPDIR` to a per-job local directory that is cleaned up before Snakemake's `os.remove()` call, causing a crash. Fixed by exporting `TMPDIR` to a stable shared path before any snakemake calls.
+
+#### `workflow/rules/common.smk` — Numeric sample names parsed as integers
+
+Sample names composed entirely of digits (e.g. `109`) were inferred as `int64` by pandas, causing `"|".join(samples.index)` in `wildcard_constraints` to raise `TypeError`. Added `dtype=str` to the `pd.read_table` call for `samples`.
+
+#### `workflow/rules/gtgvcfs.smk` — `intervals` treated as input file
+
+`intervals=lambda wildcards: wildcards.chrom` declared under `input:` caused Snakemake to treat the chromosome name as a required file path. Moved to `params:`, shell command updated to `{params.intervals}`.
+
+#### `workflow/rules/gtgvcfs.smk` — Wrong conda environment path
+
+`conda: "envs/gatk4.yaml"` resolved to `workflow/rules/envs/gatk4.yaml` (non-existent). Fixed to `"../envs/gatk4.yaml"`.
+
+### Changed
+
+#### `Start_shave.sh` — Dry-run now optional
+
+A `dry_run` variable (line 58, default `"true"`) controls whether the pre-flight dry-run is executed. Set to `"false"` to skip it on large datasets (many samples or highly fragmented genomes) where DAG construction alone can be slow. Documented in `README.md`.
 
 ---
 

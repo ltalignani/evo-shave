@@ -184,6 +184,18 @@ sbatch Start_shave.sh
 
 Your analyzes will start.
 
+### Dry-run
+
+By default, `Start_shave.sh` performs a dry-run before the actual execution to preview the jobs that will be submitted. This can be **slow or impractical** with very large datasets (hundreds of samples or highly fragmented reference genomes with many scaffolds), as Snakemake must build the full DAG before displaying it.
+
+To disable the dry-run, edit line 58 of `Start_shave.sh`:
+
+```shell
+dry_run="false"   # was "true"
+```
+
+Disabling the dry-run is safe for routine production runs on a stable, already-tested configuration. Keep it enabled when running for the first time, after modifying rules, or after changing the sample list.
+
 \~ MEMORY AND RUNTIME MANAGEMENT \~
 
 On a local computer, if you want to control how the `--retries` option affects the memory allocation of a rule, you can adjust the get_mem_mb function for each concerned rule, located in the `workflow/rules/` directory:

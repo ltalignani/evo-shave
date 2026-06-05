@@ -9,6 +9,7 @@ if config["markdup"].get("skip", False):
     rule markduplicates_bam:
         message:
             "MarkDuplicates skipped for {wildcards.sample} (ddRAD-seq mode) — copying merged BAM"
+        priority: 70
         input:
             bam="merged/{sample}_merged.bam",
         output:
@@ -33,6 +34,7 @@ else:
     rule markduplicates_bam:
         message:
             "Mark Duplicates for {wildcards.sample} sample"
+        priority: 70
         resources:
             partition="fast",
             cpus_per_task=1,

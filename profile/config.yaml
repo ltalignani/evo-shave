@@ -7,19 +7,19 @@ default-resources:
   nodes: 1
   tasks: 1
   mem_mb: max((1.5 * input.size_mb) * attempt, 4000) # see https://snakemake.readthedocs.io/en/v8.4.7/executing/cli.html
-jobs: 100
-restart-times: 5
+jobs: 500
 latency-wait: 60
 rerun-incomplete: True
 use-envmodules: False
 use-conda: True
-conda-frontend: conda
 printshellcmds: True
-max-jobs-per-second: 1
-max-status-checks-per-second: 1
+max-jobs-per-second: 5
+max-status-checks-per-second: 5
 local-cores: 1
 
 # Rules configuration
+# Memory floors: to calibrate empirically, run monitor_memory.sh during pipeline execution
+# Runtime floors: calibrated from analyze_efficiency.py (P95 × 1.5), run 2026-06-05
 set-resources:
   fastqc:
     slurm_partition: "fast"
@@ -27,30 +27,30 @@ set-resources:
     mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
     runtime: max((input.size_mb / 1024) * 6 * attempt, 30)
   trimmomatic:
-    slurm_partition: "long"
+    slurm_partition: "fast"
     cpus_per_task: 8
     mem_mb: max((1.5 * input.size_mb) * attempt, 6000)
-    runtime: max((input.size_mb / 1024) * 30 * attempt, 300)
+    runtime: max((input.size_mb / 1024) * 30 * attempt, 30)  # observed P95: 1.4 min × 1.5
   bwa_mem:
-    slurm_partition: "long"
+    slurm_partition: "fast"
     cpus_per_task: 16
-    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
-    runtime: max((input.size_mb / 1024) * 36 * attempt, 120)
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)  # reduced from 16000; calibrate with monitor_memory.sh
+    runtime: max((input.size_mb / 1024) * 36 * attempt, 30)  # observed P95: 1.7 min × 1.5
   merge_bams:
     slurm_partition: "fast"
     cpus_per_task: 4
-    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
-    runtime: max((input.size_mb / 1024) * 6 * attempt, 30)
+    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
+    runtime: max((input.size_mb / 1024) * 6 * attempt, 30)  # observed P95: 0.3 min × 1.5
   markduplicates_bam:
-    slurm_partition: "long"
+    slurm_partition: "fast"
     cpus_per_task: 1
-    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
-    runtime: max((input.size_mb / 1024) * 18 * attempt, 120)
+    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)  # reduced from 16000; calibrate with monitor_memory.sh
+    runtime: max((input.size_mb / 1024) * 18 * attempt, 20)  # observed P95: 0.3 min × 1.5
   samtools_index:
     slurm_partition: "fast"
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
-    runtime: max((input.size_mb / 1024) * 8 * attempt, 120)
+    runtime: max((input.size_mb / 1024) * 8 * attempt, 15)  # observed P95: 0.7 min × 1.5
   SetNmMdAndUqTags:
     slurm_partition: "fast"
     cpus_per_task: 1
@@ -94,8 +94,8 @@ set-resources:
   validatesam_HC:
     slurm_partition: "fast"
     cpus_per_task: 2
-    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
-    runtime: max((input.size_mb / 1024) * 18 * attempt, 60)
+    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)  # reduced from 16000; calibrate with monitor_memory.sh
+    runtime: max((input.size_mb / 1024) * 18 * attempt, 15)  # observed P95: 1.2 min × 1.5
   samtools_stats:
     slurm_partition: "fast"
     cpus_per_task: 4
@@ -105,7 +105,7 @@ set-resources:
     slurm_partition: "fast"
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: attempt * 120
+    runtime: attempt * 20  # observed P95: 1.9 min × 1.5
   qualimap_ug:
     slurm_partition: "fast"
     cpus_per_task: 8
@@ -115,7 +115,7 @@ set-resources:
     slurm_partition: "fast"
     cpus_per_task: 8
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: attempt * 720
+    runtime: attempt * 30  # observed P95: 1.4 min × 1.5
   multiqc:
     slurm_partition: "fast"
     cpus_per_task: 1
@@ -129,8 +129,8 @@ set-resources:
   HaplotypeCaller:
     slurm_partition: "long"
     cpus_per_task: 4
-    mem_mb: max((1.5 * input.size_mb) * attempt, 32000)
-    runtime: attempt * 180
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)  # reduced from 32000; calibrate with monitor_memory.sh
+    runtime: attempt * 30  # observed P95: 0.6 min × 1.5; most scaffolds complete in < 1 min
   unifiedgenotyper:
     slurm_partition: "long"
     cpus_per_task: 8
@@ -149,13 +149,13 @@ set-resources:
   genomics_db_import:
     slurm_partition: "long"
     cpus_per_task: 1
-    mem_mb: max((1.5 * input.size_mb) * attempt, 24000)
-    runtime: attempt * 14400
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)  # reduced from 24000; calibrate with monitor_memory.sh
+    runtime: attempt * 720  # reduced from 14400; not yet observed — increase if timeouts occur
   genotype_gvcfs:
     slurm_partition: "long"
     cpus_per_task: 6
-    mem_mb: max((1.5 * input.size_mb) * attempt, 128000)
-    runtime: attempt * 2880
+    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)  # reduced from 128000; calibrate with monitor_memory.sh
+    runtime: attempt * 360  # reduced from 2880; not yet observed — increase if timeouts occur
   report_vcf:
     slurm_partition: "fast"
     cpus_per_task: 1
@@ -166,8 +166,3 @@ set-resources:
     cpus_per_task: 1
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: attempt * 240
-#config:
-#  my_parameter_list:
-#    - "item_0"
-#    - "item_1"
-

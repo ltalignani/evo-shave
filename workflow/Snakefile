@@ -27,6 +27,7 @@ caller = config["caller"]
 # INCLUSION DES MODULES #
 include: "rules/create_directories.smk"
 include: "rules/common.smk"
+include: "rules/bam_barrier.smk"
 include: "rules/fastqc.smk"
 include: "rules/trim.smk"
 include: "rules/bwa.smk"
@@ -57,6 +58,7 @@ localrules:
     create_directories,
     create_bed_file_for_igv,
     create_bam_list,
+    all_bams_ready,
 
 
 # Pre-compute VCF output targets based on vcf_output_mode and enable_variant_calling.

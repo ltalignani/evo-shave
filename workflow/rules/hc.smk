@@ -18,6 +18,7 @@ rule HaplotypeCaller:
     input:
         bam="dedup/{sample}_sorted_md.bam",
         index="dedup/{sample}_sorted_md.bai",
+        barrier="flags/all_bams_ready.flag",
         reference=reference_file,
         dictionary=dictionary,
         fai=index,

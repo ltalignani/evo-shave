@@ -1,6 +1,7 @@
 rule trimmomatic:
     message:
         "Trimming for {wildcards.sample} sample of the unit {wildcards.unit}"
+    priority: 80
     resources:
         partition="fast",
         cpus_per_task=8,

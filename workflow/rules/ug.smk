@@ -31,6 +31,7 @@ rule unifiedgenotyper:
         runtime=10080,
     input:
         bam=rules.create_bam_list.output.bam_list,
+        barrier="flags/all_bams_ready.flag",
         ref=reference_file,
     output:
         temp("calls/variants.{chrom}.vcf"),
