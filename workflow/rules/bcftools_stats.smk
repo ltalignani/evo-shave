@@ -94,7 +94,11 @@ if vcf_output_mode != "per_contig":
         input:
             vcf="calls/all.filtered.vcf.gz",
         output:
-            "qc/vcf_stats/all.filtered.bcftools_stats.txt",
+            report(
+                "qc/vcf_stats/all.filtered.bcftools_stats.txt",
+                caption="../report/bcftools_genome.rst",
+                category="Variant Calling QC",
+            ),
         log:
             "logs/vcf_stats/bcftools_stats_genome.log",
         conda:

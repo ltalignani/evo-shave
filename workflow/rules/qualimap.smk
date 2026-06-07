@@ -13,7 +13,12 @@ rule qualimap_ug:
         bam=rules.sort_by_coordinate.output,
     output:
         directory("qc/qualimap/{sample}_report"),
-        report_html="qc/qualimap/{sample}_report/qualimapReport.html",
+        report_html=report(
+            "qc/qualimap/{sample}_report/qualimapReport.html",
+            caption="../report/qualimap_ug.rst",
+            category="Alignment QC",
+            subcategory="{sample}",
+        ),
     conda:
         "../envs/qualimap.yaml"
     log:
@@ -35,7 +40,12 @@ rule qualimap_hc:
         bam=rules.markduplicates_bam.output.bam,
     output:
         directory("qc/qualimap_hc/{sample}_report"),
-        report_html="qc/qualimap_hc/{sample}_report/qualimapReport.html",
+        report_html=report(
+            "qc/qualimap_hc/{sample}_report/qualimapReport.html",
+            caption="../report/qualimap_hc.rst",
+            category="Alignment QC",
+            subcategory="{sample}",
+        ),
     conda:
         "../envs/qualimap.yaml"
     log:

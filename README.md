@@ -1,607 +1,394 @@
-SHAVE: SHort-read Alignment pipeline for VEctors
-==================================================================================================================
+# SHAVE — SHort-read Alignment pipeline for VEctors
 
-![macOS](https://badgen.net/badge/icon/Sequoia%20(15.0)%20%7C%20Sonoma%20(14.7)%20%7C%20Ventura%20(13.7)%20%7C%20Monterey%20(12.7.6)/E6055C?icon=apple&label&list=%7C&scale=0.9) ![GNU/Linux](https://badgen.net/badge/icon/Focal%20Fossa%20(20.04)%20%7C%20Jammy%20Jellyfish%20(22.04)/772953?icon=https://www.svgrepo.com/show/25424/ubuntu-logo.svg&label&list=%7C&scale=0.9) ![Open Source](https://badgen.net/badge/icon/Open%20Source/purple?icon=https://upload.wikimedia.org/wikipedia/commons/4/44/Corazón.svg&label&scale=0.9) ![GNU AGPL v3](https://badgen.net/badge/Licence/GNU%20AGPL%20v3/grey?scale=0.9) ![Github](https://badgen.net/badge/icon/Github/?icon=gitlab&label&scale=0.9) ![Bash](https://badgen.net/badge/icon/Bash%205.1.16/black?icon=terminal&label&scale=0.9) ![Python](https://badgen.net/badge/icon/Python%203.12/black?icon=https://upload.wikimedia.org/wikipedia/commons/0/0a/Python.svg&label&scale=0.9) ![Snakemake](https://badgen.net/badge/icon/Snakemake%20(8.20)%20%7C%20(8.9.0)/green?icon=https://upload.wikimedia.org/wikipedia/commons/d/d3/Python_icon_(black_and_white).svg&label&scale=0.9) ![Conda](https://badgen.net/badge/icon/Conda%20(23.11.0)%20%7C%20Mamba%20(1.5.5)/black?icon=codacy&label&scale=0.9)
+![macOS](https://badgen.net/badge/icon/macOS/E6055C?icon=apple&label&scale=0.9)
+![GNU/Linux](https://badgen.net/badge/icon/GNU%2FLinux/772953?icon=https://www.svgrepo.com/show/25424/ubuntu-logo.svg&label&scale=0.9)
+![Snakemake](https://badgen.net/badge/icon/Snakemake%20%E2%89%A59.0.0%20%7C%20tested%209.4.0/green?icon=https://upload.wikimedia.org/wikipedia/commons/d/d3/Python_icon_(black_and_white).svg&label&scale=0.9)
+![Conda](https://badgen.net/badge/icon/Conda%2024%2B/black?icon=codacy&label&scale=0.9)
+![Python](https://badgen.net/badge/icon/Python%203.12/black?icon=https://upload.wikimedia.org/wikipedia/commons/0/0a/Python.svg&label&scale=0.9)
+![GNU AGPL v3](https://badgen.net/badge/Licence/GNU%20AGPL%20v3/grey?scale=0.9)
 
-\~ ABOUT \~
------------
+---
 
-SHAVE is a bioinformatics pipeline designed for **alignment and variant calling of mosquitoe genomes** (*Aedes* and *Anopheles*) using Illumina® short-reads, based on GATK® Best Practices (excluding the BQSR and VQSR steps, as explained below) and the [MalariaGEN pipelines](https://github.com/malariagen/pipelines).
-In brief, SHAVE reports quality reads, removes adapters, aligns reads to a reference genome, marks duplicates, corrects bam tags (NM, MD, UQ), validates BAM files according to SAM/BAM specifications, and reports statistics.
-SHAVE utilizes **GATK4® HaplotypeCaller** to call variants and genotype likelihoods, but it can also use **GATK3® UnifiedGenotyper** instead. SHAVE was created to adhere to the parameters of the **MalariaGEN pipelines** (phases 2 and 3), enabling variant and genotype calling under the same conditions used in the *1000 Genomes Anopheles gambiae project*. When using GATK3® UnifiedGenotyper, SHAVE adds indel realignment step before UnifiedGenotyper to call variants and genotypes, as done by MalariaGEN.
-This pipeline considers practical realities. It can be run on a **local machine** or on a **cluster under slurm workload manager**
+## About
 
-**Note about BQSR and VQSR :**
+SHAVE is a production-grade Snakemake pipeline for **alignment and variant calling of mosquito genomes** (*Aedes*, *Anopheles*, and related species) from Illumina paired-end short reads. It follows GATK Best Practices and is designed to match [MalariaGEN pipeline](https://github.com/malariagen/pipelines) parameters (phases 2 and 3), making results directly comparable to the *1000 Genomes Anopheles gambiae* project.
 
-The **Base Quality Score Recalibration** step requires a *known variation* VCF file, referring to the Ensembl-Variation database or dbSNP database, which store areas of the genome that differ between individual genomes (“variants”). However, we do not have a prior list of known variants for our *Aedes* species, which is why we cannot perform BQSR.
+SHAVE runs on a **local workstation** or on a **SLURM cluster**, with fully automatic resource scaling, BAM-first scheduling, and post-run efficiency analysis.
 
-The value of BQSR is also [increasingly being
-questioned](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-1279-z#Abs1)
-as mappers and callers are typically updated. Using HaplotypeCaller instead of UnifiedGenotyper greatly improves the handling of indels.
+---
 
-**Variant Quality Score recalibration** is arguably the most challenging part of the Best Practices to get right [according to Broad
-Institute](https://gatk.broadinstitute.org/hc/en-us/articles/4413056319131-VariantRecalibrator).
-In essence, it is a sophisticated filtering technique applied to the variant callset that uses machine learning to model the technical profile of variants in a training set and uses that to filter out probable artifacts from the callset.
+## Features
 
-The key point is that it uses known, highly validated variant resources (such as Omni, 1000 Genomes, and HapMap) to select a subset of variants within our callset that we are confident are true positives (the training set). Unfortunately, no highly validated variant resource is available for *Aedes* at this time, so we decided to apply hard-filtering and leave the choice of parameters to the user. SHAVE extracts some information from the raw VCF to help in choosing the right parameters.
+### Variant calling
 
-### Features
+- **GATK4 HaplotypeCaller** — per-sample GVCF → GenomicsDBImport → joint GenotypeGVCFs
+- **GATK3 UnifiedGenotyper** — multi-sample calling with indel realignment, matching MalariaGEN phase 2/3 parameters
+- **Hard filtering** (GATK VariantFiltration) — SNV and indel filters configured in `config.yaml`; no truth set required
+- **VCF output modes** — per-chromosome, genome-wide merged, or both
 
-**SHAVE pipeline:**
+### Sequencing library support
 
-- Control reads quality (**fastQC** and **multiQC html report**),
+- **Whole-genome sequencing** (WGS) — standard MarkDuplicates workflow
+- **ddRAD-seq** — MarkDuplicates bypass (`markdup.skip: true`) to avoid systematic flagging of enzyme-cut reads as duplicates
+- **Multi-lane samples** — BAMs from multiple sequencing lanes are automatically merged per sample before downstream processing
 
-- Trim adapters
+### Reference genomes
 
-- Align reads (*sam files*),
+- *Aedes albopictus* AalbF5
+- *Aedes albopictus* AalbF3
+- *Aedes aegypti* AaegL5
+- *Anopheles gambiae* AgamP4
+- *Phocoena phoecoena* mPhoPho1.1
+- *Orcinus orca* mOrcOrc1.1
+- Any custom FASTA (provide `.fasta`, `.fai`, `.dict` and pre-built BWA indices)
+- **Chromosome auto-detection** — reads contigs directly from `.fai` at parse time; configurable size and name filters for fragmented assemblies
 
-- Convert sam into bam format and sort by coordinates,
+### Quality control
 
-- Mark duplicates to BAM files,
+- FastQC on raw reads
+- Samtools stats on deduplicated BAMs
+- Qualimap coverage reports
+- bcftools stats on raw and filtered VCFs (per-chromosome + genome-wide)
+- VCFtools frequency and statistics
+- MultiQC HTML report aggregating all QC metrics
 
-- Correct MD, NM and UQ tags into BAM files,
+### SLURM cluster
 
-- Validate BAM file according to SAM/BAM specifications,
+- Dynamic resource allocation scaling with `input.size_mb` and `attempt`
+- **BAM-first scheduling** — a barrier rule prevents variant-calling jobs from flooding the queue before all BAMs are produced
+- Rule-level priority (`bwa_mem: 85`, `trimmomatic: 80`, etc.)
+- Up to 500 concurrent SLURM jobs; configurable per-rule partition, CPU, memory, and runtime
+- Automatic results archiving (`transfer_results.sh`)
+- Post-run SLURM efficiency analysis (`analyze_efficiency.py`)
 
-- Creates an Indels interval list if UnifiedGenotyper have been selected,
+### Why no BQSR or VQSR?
 
-- Create a .bed file to view the realignments in a genome viewer (IGV),
+**BQSR** requires a validated set of known variants (dbSNP / Ensembl Variation). No such resource exists for *Aedes* species, making BQSR inapplicable. **VQSR** similarly requires curated truth sets (HapMap, 1000 Genomes) unavailable for non-model organisms. SHAVE applies [GATK hard filtering](https://gatk.broadinstitute.org/hc/en-us/articles/360035531112) instead, with thresholds configurable in `config.yaml`.
 
-- Realign Indels,
+---
 
-- Index realigned bam,
+## Quick start
 
-- Stats on bam,
+### Local execution
 
-- Variant calling on each sample (*vcf files*),
-
-- Genotyping,
-
-- VCF compression,
-
-- Variant filtering
-
-### Version
-
-*V4.2026.06.03*
-
-### Directed Acyclic Graph
-
-#### UnifiedGenotyper
-
-<img src="./visuals/dag_UG.png" width="1200" height="500">  
-
-#### HaplotypeCaller
-
-<img src="./visuals/dag_HC.png" width="1200" height="400">  
-
-\~ INSTALLATIONS \~
--------------------
-
-### Conda *(dependencies)* ###
-
-SHAVE utilizes the powerful **Conda or mamba** environment manager.
-Therefore, if and only if *(Conda is not already installed)*, please install **Conda | mamba** first!
-
-**Download** and **install** the version of the [Latest Miniconda Installer](https://docs.conda.io/en/latest/miniconda.html#latest-miniconda-installer-links) (23.5.2+) that is compatible with your operating system  
-
-e.g. for **Linux_x86_64-bit** or **Windows Subsystem for Linux (WSL)** systems:  
-
-```shell
-curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o ~/Miniconda3-latest-Linux-x86_64.sh && \
-bash ~/Miniconda3-latest-Linux-x86_64.sh -b -p ~/miniconda3/ && \
-rm -f ~/Miniconda3-latest-Linux-x86_64.sh && \
-~/miniconda3/condabin/conda update conda --yes && \
-~/miniconda3/condabin/conda init && \
-exit
+```bash
+conda activate snakemake
+snakemake --cores 32 --use-conda --keep-going --rerun-incomplete --retries 5 --local-cores 8
 ```
 
-e.g. for **MacOSX_INTEL-chips_x86_64-bit** or **MacOSX_M1/M2/M3/M4-chips_arm_64-bit (with Rosetta)** systems:  
+### SLURM cluster
 
-```shell
-curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o ~/Miniconda3-latest-MacOSX-x86_64.sh && \
-bash ~/Miniconda3-latest-MacOSX-x86_64.sh -b -p ~/miniconda3/ && \
-rm -f ~/Miniconda3-latest-MacOSX-x86_64.sh && \
-~/miniconda3/condabin/conda update conda --yes && \
-~/miniconda3/condabin/conda init && \
-exit
+```bash
+sbatch Start_shave.sh
 ```
 
-Create a specific conda environment for **Snakemake v.8**:
+Edit `profile/config.yaml` to set your SLURM account and partition names before submitting.
 
-```shell
+---
+
+## Prerequisites
+
+- [Miniconda or Anaconda](https://docs.conda.io/en/latest/miniconda.html) (conda ≥ 24.0 recommended)
+- [Snakemake](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html) ≥ 9.0.0 (tested with 9.4.0)
+- [snakemake-executor-plugin-slurm](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html) (cluster only)
+
+---
+
+## Installation
+
+```bash
+git clone https://github.com/ltalignani/shave.git
+cd shave/
+
+# Create the Snakemake environment
 conda create -c conda-forge -c bioconda -n snakemake snakemake
 conda activate snakemake
 ```
 
-### SHAVE ###
+Update the repository at any time:
 
-Clone *(HTTPS)* the [shave](https://github.com/ltalignani/shave.git) repository on
-github:
-
-```shell
-git clone git@github.com:ltalignani/shave.git
-cd ./shave/
-```
-
-Difference between **Download** and **Clone**:  
-
-- To create a copy of a remote repository’s files on your computer, you can
-either **Download** or **Clone** the repository  
-- If you download it, you **cannot sync** the repository with the remote
-repository on GitHub  
-- Cloning a repository is the same as downloading, except it preserves the Git
-connection with the remote repository  
-- You can then modify the files locally and upload the changes to the remote
-repository on GitHub  
-- You can then **update** the files locally and download the changes from the
-remote repository on GitHub
-
-```shell
+```bash
 git pull --verbose
 ```
 
-\~ USAGE \~
------------
+---
 
-1. Local machine: activate your conda environment for snakemake
+## Usage
 
-2. Copy your **paired-end** reads in **_R{1|2}.fastq.gz** format files
-    into: **raw/** directory.
+### 1. Prepare input files
 
-3. Cluster usage: Edit the slurm profile according to your slurm account and
-    cluster settings (partition names, mail): edit `config.yaml` file in
-    `./profiles/default/` directory. The [snakemake--executor-plugin](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html) must be installed on the cluster module.
+Place paired-end reads in the `raw/` directory. Accepted filename formats:
 
-    See:
-
-    [Dynamic Resources Allocation](https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#dynamic-resources)  
-    [Slurm Profiles](https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles)  
-  
-    for more info.
-
-    **Important**: The `Start_shave.sh` script assumes that a `snakemake` and `conda` modules are installed on your cluster. You need to edit lines 35 and 36 of this script to adjust the module names.
-
-4. Local machine / Cluster usage: edit `config.yaml` file in `config/` directory
-
-5. Execute the pipeline on a local machine, use the **bash command:**
-
-```shell
-snakemake --cores 32 --software-deployment-method conda apptainer --use-conda --conda-frontend conda --prioritize create_directories --keep-going --rerun-incomplete --retries 5 --local-cores 8
+```
+{sample}_L{n}_R{1|2}.fastq.gz      # already correct
+{sample}_R{1|2}.fastq.gz            # lane L1 inserted automatically
+{sample}_{1|2}.fastq.gz             # read number and lane normalised
+{sample}_R{1|2}.fq.gz               # extension normalised
 ```
 
-Available options:  
+`Start_shave.sh` renames files automatically to `{sample}_L{n}_R{1|2}.fastq.gz` before running.
 
-- `--cores`: change this number according to your local machine specifications.
-- `--conda-frontend`: conda | mamba  
-- `--retries`: the number of times a job must be automatically restarted. This parameter is used to manage dynamic resources and affects both the memory usage and runtime of a rule (local) or job (cluster). If a rule/job fails, Snakemake’s internal `attempt` variable is incremented by 1 (e.g., from 1 to 2). This allows, for example, the allocated memory to be doubled when the job restarts.
+### 2. Edit the sample tables
 
-Alternatively, you can execute the `Start_shave.sh` bash script to run the pipeline on a cluster:
+**`config/samples.tsv`** — one row per biological sample:
 
-```shell
+```
+sample
+FCV003
+MPLS001
+```
+
+**`config/units.tsv`** — one row per sequencing unit (sample × lane):
+
+```
+sample    unit    platform    fq1                          fq2
+FCV003    L1      ILLUMINA    raw/FCV003_L1_R1.fastq.gz    raw/FCV003_L1_R2.fastq.gz
+MPLS001   L1      ILLUMINA    raw/MPLS001_L1_R1.fastq.gz   raw/MPLS001_L1_R2.fastq.gz
+```
+
+### 3. Configure the pipeline
+
+Edit `config/config.yaml`. Key settings:
+
+```yaml
+# Reference genome
+refs:
+  reference: "resources/genomes/AalbF5.fasta"
+
+# Variant caller: "HaplotypeCaller" or "UnifiedGenotyper"
+caller: "HaplotypeCaller"
+
+# ddRAD-seq: skip MarkDuplicates
+markdup:
+  skip: false
+
+# Chromosome / scaffold selection
+chromosomes:
+  auto: true          # read contigs from .fai
+  min_size: 0         # filter scaffolds below N bp
+  pattern: ""         # regex filter on contig names (e.g. "^NC_")
+  vcf_output: "both"  # "per_contig" | "merged" | "both"
+```
+
+### 4. Run the pipeline
+
+**Local machine:**
+
+```bash
+conda activate snakemake
+snakemake --cores 32 --use-conda --keep-going --rerun-incomplete --retries 5 --local-cores 8
+```
+
+**SLURM cluster:**
+
+```bash
 sbatch Start_shave.sh
 ```
 
-Your analyzes will start.
+The submission script handles: FastQ renaming, directory creation, conda environment setup, optional dry-run, and results archiving prompt.
 
 ### Dry-run
 
-By default, `Start_shave.sh` performs a dry-run before the actual execution to preview the jobs that will be submitted. This can be **slow or impractical** with very large datasets (hundreds of samples or highly fragmented reference genomes with many scaffolds), as Snakemake must build the full DAG before displaying it.
+`Start_shave.sh` runs a dry-run by default to preview the job DAG. On large datasets (many samples or highly fragmented genomes), disable it by editing line 58:
 
-To disable the dry-run, edit line 58 of `Start_shave.sh`:
-
-```shell
-dry_run="false"   # was "true"
+```bash
+dry_run="false"
 ```
 
-Disabling the dry-run is safe for routine production runs on a stable, already-tested configuration. Keep it enabled when running for the first time, after modifying rules, or after changing the sample list.
+Keep it enabled when running for the first time, after modifying rules, or after changing the sample list.
 
-\~ MEMORY AND RUNTIME MANAGEMENT \~
+---
 
-On a local computer, if you want to control how the `--retries` option affects the memory allocation of a rule, you can adjust the get_mem_mb function for each concerned rule, located in the `workflow/rules/` directory:
+## SLURM resource management
 
-```shell
-def get_mem_mb(wildcards, attempt):
-    mem = attempt * 8000
-    print(f"Attempt {attempt}: Allocating {mem} MB of memory")
-    return mem
-```
+Resources are defined in `profile/config.yaml` and scale automatically with file size and retry count:
 
-Change `8000` by an other value.
-
-On a cluster, a slurm profile, present in `profile/config.yaml` and working in conjunction with the slurm-executor-plugin package, has been created to control the partition where each job is running, the number of cpus as well as the memory and time allocated to each job. These last two parameters are controlled by the snakemake variable `attempt` :
-
-```shell
-executor: "slurm"
-default-resources:
-  slurm_account: "invalbo"
-  slurm_partition: "long"
-  runtime: f"{2 + attempt}h"
-  cpus_per_task: 1
-  nodes: 1
-  tasks: 1
-  mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
-jobs: 100
-restart-times: 5
-latency-wait: 60
-rerun-incomplete: True
-use-envmodules: False
-use-conda: True
-conda-frontend: conda
-printshellcmds: True
-max-jobs-per-second: 1
-max-status-checks-per-second: 1
-local-cores: 1
-
-# Rules configuration
+```yaml
 set-resources:
-  fastqc:
-    slurm_partition: "fast"
-    cpus_per_task: 8
-    mem_mb: attempt * 4000
-    runtime: attempt * 60
-  trimmomatic:
-    slurm_partition: "fast"
-    cpus_per_task: 8
-    mem_mb: attempt * 8000
-    runtime: attempt * 180
-  ...
+  HaplotypeCaller:
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    runtime: attempt * 30
+  bwa_mem:
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    runtime: max((input.size_mb / 1024) * 36 * attempt, 30)
 ```
 
-Jobs often fail due to insufficient memory or time allocation. To address this, SHAVE is programmed to make up to five attempts for each job, incrementing the `attempt` variable by 1 with each restart. The memory and time values specified in the slurm profile are then multiplied by the `attempt` value to ensure the job completes.
-If you need to edit this Slurm configuration file, it is strongly recommended to only modify the numerical values and not remove the `attempt` variable.
+When a job fails, `attempt` increments (1→2→3…) up to 5 retries, proportionally increasing memory and runtime.
 
-see:
+### BAM-first scheduling
 
-[Workflow profile instructions](https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles),
-[The snakemake profile project](https://github.com/snakemake-profiles/doc),
-[Dynamic resources allocation](https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#dynamic-resources),
+A barrier rule (`all_bams_ready`) prevents HaplotypeCaller and UnifiedGenotyper jobs from being submitted before all deduplicated BAMs exist. This avoids flooding the SLURM `long` partition queue — and depleting FairShare — while `fast` partition BAM jobs are still running.
 
-for more info.
+### Cluster module requirements
 
-\~ QUALITY CONTROL \~
-----------------------
+`Start_shave.sh` loads modules at submission time. Edit lines 35–36 to match your cluster:
 
-Yours results are available in **qc/** directory, as follow:
+```bash
+module load snakemake/8.27.1
+module load conda
+```
 
-| File                    | Object                                                                 |
-| ----------------------- | ---------------------------------------------------------------------- |
-| **fastqc**              | raw reads quality reports for each sample, in *html* and *zip* formats |
-| **markdup_metrics.txt** | bam metrics created by Picard MarkDuplicates                           |
-| **Multiqc_data**        | Multiqc data                                                           |
-| **Multiqc_report.html** | results agregation report for all samples, in *html* format            |
-| **samtools**            | bam file statistics reports, in *txt* format                           |
-| **validatesamfile**     | bam file validation report, in *txt* format                            |
+---
 
-\~ RESULTS \~
--------------
+## Post-run tools
 
-Yours results are available in **results/** directory, as follow:  
+### SLURM efficiency analysis
 
-### 01_Trimming
+After the pipeline completes, analyse CPU and memory efficiency per rule and generate an optimised `profile/config_optimized.yaml`:
 
-| File                                     | Object                                                                    |
-| ---------------------------------------- | ------------------------------------------------------------------------- |
-| **XXX_trimmomatic_R1                     | 2.fastq.gz**                                                              | paired reads, without adapters and quality trimmed, in *fastq.gz* format |
-| **XXX_trimmomatic_unpaired_R2.fastq.gz** | unpaired reads without adapters and quality trimmed, in *fastq.gz* format |
+```bash
+bash analyze_efficiency.sh Cluster_logs/evoshave-*.out
+diff profile/config.yaml profile/config_optimized.yaml
+```
 
-### 02_Mapping
+Options: `--mem-margin 1.3`, `--time-margin 1.5`, `--n-outliers 5`.
 
-| File         | Object                      |
-| ------------ | --------------------------- |
-| *sorted.bam* | Binary Alignment File       |
-| *sorted.bai* | Binary Alignment File index |
+### Live memory monitoring
 
-### 04_Polishing
+Run alongside the pipeline to capture peak `MaxRSS` per rule (required because this cluster does not populate `MaxRSS` in `sacct`):
 
-| File                           | Object                                                                                             |
-| ------------------------------ | -------------------------------------------------------------------------------------------------- |
-| *_md.bam*                      | marked bam file                                                                                    |
-| *_md.bai*                      | marked bam file index                                                                              |
-| *_tagged.bam*                  | tagged bam file (NM, MD UQ tags correction)                                                        |
-| *_tagged.bai*                  | tagged bam file index                                                                              |
-| **realignertargetcreator.bed** | local alignment intervals in *bed* format. Use in i.e. IGV with *./resources/genomes/AalbF3.fasta* |
-| *realigned.bam*                | realigned bam files (if caller = UnifiedGenotyper in config file)                                  |
-| *_realigned_stats*             | realigned bam statistics (if caller = UnifiedGenotyper in config file)                             |
+```bash
+bash monitor_memory.sh --interval 60 --output memory_log.tsv
+```
 
-### 05_Variants
+### Results archiving
 
-| File        | Object                                 |
-| ----------- | -------------------------------------- |
-| **.vcf**    | variant calls, in *vcf* format         |
-| **vcf.idx** | variant calls indexes, in *idx* format |
+Transfer outputs to a shared archive and reset the pipeline for reuse:
 
-### 10_graphs
+```bash
+sbatch transfer_results.sh
+```
 
-| File          | Object                                                                                                                                                                                |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **dag**       | directed acyclic graph of jobs, in *pdf* and *png* formats                                                                                                                            |
-| **rulegraph** | dependency graph of rules, in *pdf* and *png* formats *(less crowded than above DAG of jobs, but also show less information)*                                                         |
-| **filegraph** | dependency graph of rules with their input and output files in the dot language, in *pdf* and *png* formats *(an intermediate solution between above DAG of jobs and the rule graph)* |
+Configure destination in `config/config.yaml`:
 
-### 11_Reports
+```yaml
+transfer:
+  results_dir: "/shared/projects/invalbo/results"
+  run_name: "evo-shave"
+```
 
-| File              | Object                                                                                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **.log**          | All *non-empty* **log** for each tool and each sample                                                                              |
-| files_summary.txt | summary of all files created by the workflow, in *txt* format *(columns: filename, modification time, rule version, status, plan)* |
-
-\~ CONFIGURATION \~
--------------------
-
-See or edit default settings in **config.yaml** file in **./config/** directory
-
-### Resources
-
-Edit to match your hardware configuration  
-
-- **tmpdir**: for tools that can *(i.e. picard)* specify where you want the temp
-stuff *(default config: '\$TMPDIR')*
-
-### Environments
-
-SHAVE use **conda** to set up environments. The files needed to create these environments are in the workflow/envs/ directory.
-These environments have been freezed to ensure that people using this workflow will get exactly the same environments down to the individual package builds,
-which is in fact very similar to providing the environment encapsulated in a container image.
-A fin <pin> file have been generated for each conda environment. Snakemake will try to use the contents of that file to determine conda packages to deploy.
-
-### Aligner
-
-SHAVE use **BWA** to perform the alignment to the reference genome.
-
-### Mark Duplicates program
-
-SHAVE use **picard MarkDuplicates** to perform this step. Picard works perfectly with GATK's programs. Can remove duplicates if needed *(default config)*
-
-### Trimmomatic
-
-- **adapters**: link to adapters lists
-
-- **seedMisMatches**: specifies the maximum mismatch count which will still
-    allow a full match to be performed
-
-- **palindromeClipTreshold**: specifies how accurate the match between the two
-    'adapter ligated' reads must be for PE palindrome read alignment
-
-- **simpleClipThreshold**: specifies how accurate the match between any
-    adapter etc. sequence must be against a read
-
-- **LeadMinTrimQual**: Cut bases off the start of a read, if below a threshold
-    quality
-
-- **TrailMinTrimQual**: Cut bases off the end of a read, if below a threshold
-    quality
-
-- **windowSize**: Performs a sliding window trimming approach. It starts
-    scanning at the 5‟ end and clips the read once the average quality within
-    the window falls below a threshold
-
-- **avgMinQual**: Drop the read if the average quality is below the specified
-    level
-
-- **minReadLength**: Drop the read if it is below a specified length
-
-- **phred**: Convert quality scores to Phred-33 if phred-33 is selected
-    (default)
-
-### Directories tree structure
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ shell
-🖥️️ Start_shave.sh
-📚 README.md
-📚 LICENSE
-📂 visuals/
- ├── 📈 dag.png
-📂 config/
- ├── ⚙️ config.yaml
- ├── ⚙️ fastq-screen.conf
-📂 resources/
- ├── 📂 adapters/
- │    ├── 🧬 NexteraPE-PE.fa
- │    ├── 🧬 Truseq2-PE.fa
- │    ├── 🧬 Truseq2-SE.fa
- │    ├── 🧬 Truseq3-PE-2.fa
- │    ├── 🧬 Truseq3-PE.fa
- │    └── 🧬 Truseq2-SE.fa
- ├── 📂 genomes/
- │    └─── 🧬 AalbF5.fasta
- ├── 📂 indexes/
- │    └── 📂 bwa/
- │         ├── 🗂️ AgamP4
- │         ├── 🗂️ Adapters
- ├── 📂 reads/  
- │    ├── 🛡️ .gitkeep
- │    ├── 📦 ERR3343471_R1.fastq.gz
- │    └── 📦 ERR3343471_R2.fastq.gz
-📂 profile/
- │    ├── ⚙️ config.yaml
- │    └── 📦 status-sacct.sh 
-📂 workflow/
- ├──🍜 Snakefile
- ├── 📂 envs/
- │    ├── 🍜 bcftools-1.15.1.yaml
- │    ├── 🍜 bwa-0.7.17.yaml
- │    ├── 🍜 fastq-screen-0.14.0.yam
- │    ├── 🍜 fastqc-0.11.9.yaml
- │    ├── 🍜 gatk3.yaml
- │    ├── 🍜 gatk3.osx64.pin.txt
- │    ├── 🍜 samtools.yaml
- │    ├── 🍜 samtools.osx64.pin.txt
- │    ├── 🍜 stats.yaml
- │    ├── 🍜 trimmomatic.yaml
- │    └── 🍜 trimmomatic.osx64.pin.txt
- ├── 📂 rules/
- │    └── 📜 awkforigv.smk
- │    └── 📜 bwamem.smk
- │    └── 📜 common.smk
- │    └── 📜 create_directories.smk
- │    └── 📜 fastqc.smk
- │    └── 📜 indlr.smk
- │    └── 📜 markduplicates.smk
- │    └── 📜 qualimap.smk
- │    └── 📜 rtc.smk
- │    └── 📜 samtools_index.smk
- │    └── 📜 samtools_stats.smk
- │    └── 📜 setnmtag.smk
- │    └── 📜 trim.smk
- │    └── 📜 validatesam.smk
- └── 📂 scripts/
-      └── 📜 common.py
-      └── 📜 plot-depths.py
-      └── 📜 report_vcf.Rmd
-      └── 📜 report.Rmd
-   
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-\~ SUPPORT \~
--------------
-
-1. Read The Fabulous Manual!
-
-2. Create a new issue: Issues \> New issue \> Describe your issue
-
-3. Send an email to [loic.talignani\@umontpellier.fr](url)
-
-\~ ROADMAP \~
--------------
-
-- Add a wiki!
-- Add a container environment with snakemake
-
-\~ AUTHORS & ACKNOWLEDGMENTS \~
--------------------------------
-
-- Loïc TALIGNANI (Developer and Maintener)
-
-\~ CONTRIBUTING \~
-------------------
-
-Open to contributions!  
-Testing code, finding issues, asking for update, proposing new features...  
-Use Git tools to share!
-
-\~ PROJECT STATUS \~
---------------------
-
-This project is **regularly updated** and **actively maintened**  
-However, you can be volunteer to step in as **developer** or **maintainer**
-
-For information about main git roles:  
-
-- **Guests** are *not active contributors* in private projects, they can only
-see, and leave comments and issues  
-- **Reporters** are *read-only contributors*, they can't write to the
-repository, but can on issues  
-- **Developers** are *direct contributors*, they have access to everything to go
-from idea to production  
-*Unless something has been explicitly restricted*  
-- **Maintainers** are *super-developers*, they are able to push to master,
-deploy to production  
-*This role is often held by maintainers and engineering managers*  
-- **Owners** are essentially *group-admins*, they can give access to groups and
-have destructive capabilities
-
-\~ LICENSE \~
--------------
-
-[GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)
-
-\~ REFERENCES \~
-----------------
-
-**Sustainable data analysis with Snakemake**  
-Felix Mölder, Kim Philipp Jablonski, Brice Letcher, Michael B. Hall, Christopher
-H. Tomkins-Tinch, Vanessa Sochat, Jan Forster, Soohyun Lee, Sven O. Twardziok,
-Alexander Kanitz, Andreas Wilm, Manuel Holtgrewe, Sven Rahmann, Sven Nahnsen,
-Johannes Köster  
-*F1000Research (2021)*  
-**DOI**: <https://doi.org/10.12688/f1000research.29032.2>  
-**Publication**: <https://f1000research.com/articles/10-33/v1>  
-**Source code**: <https://github.com/snakemake/snakemake>  
-**Documentation**: <https://snakemake.readthedocs.io/en/stable/index.html>
-
-**Anaconda Software Distribution**  
-Team  
-*Computer software (2016)*  
-**DOI**:  
-**Publication**: <https://www.anaconda.com>  
-**Source code**: <https://github.com/snakemake/snakemake> (conda)  
-**Documentation**: <https://snakemake.readthedocs.io/en/stable/index.html>
-(conda)  
-**Source code**: <https://github.com/mamba-org/mamba> (mamba) **Documentation**:
-<https://mamba.readthedocs.io/en/latest/index.html> (mamba)
-
-**Tabix: fast retrieval of sequence features from generic TAB-delimited files**  
-Heng Li  
-*Bioinformatics, Volume 27, Issue 5 (2011)*  
-**DOI**: <https://doi.org/10.1093/bioinformatics/btq671>  
-**Publication**: <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3042176/>  
-**Source code**: <https://github.com/samtools/samtools>  
-**Documentation**: <http://samtools.sourceforge.net>
-
-**GATK: A MapReduce framework for analyzing next-generation DNA sequencing
-data** *Genome Research, Volume 20: 1297-1303 (2010)* **DOI**:
-<https://doi.org/10.1101/gr.107524.110> **Publication**:
-<https://genome.cshlp.org/content/20/9/1297> **Source
-code**:<https://github.com/broadinstitute/gatk>
-**Documentation**:<https://gatk.broadinstitute.org/hc/en-us>
-
-**Picard-tools**: *Broad Institute, GitHub repository (2019)* **DOI**:
-**Publication**: **Source
-code**:<https://github.com/broadinstitute/picard>](<https://github.com/broadinstitute/picard>)
-**Documentation**:<https://broadinstitute.github.io/picard/>
-
-**The AWK Programming Language**  
-Al Aho, Brian Kernighan and Peter Weinberger  
-*Addison-Wesley (1988)*  
-**ISBN**: <https://www.biblio.com/9780201079814>  
-**Publication**:  
-**Source code**: <https://github.com/onetrueawk/awk>  
-**Documentation**: <https://www.gnu.org/software/gawk/manual/gawk.html>
-
-**Twelve years of SAMtools and BCFtools**  
-Petr Danecek, James K Bonfield, Jennifer Liddle, John Marshall, Valeriu Ohan,
-Martin O Pollard, Andrew Whitwham, Thomas Keane, Shane A McCarthy, Robert M
-Davies and Heng Li  
-*GigaScience, Volume 10, Issue 2 (2021)*  
-**DOI**: <https://doi.org/10.1093/gigascience/giab008>  
-**Publication**:
-<https://academic.oup.com/gigascience/article/10/2/giab008/6137722>  
-**Source code**: <https://github.com/samtools/samtools>  
-**Documentation**: <http://samtools.sourceforge.net>
-
-**Fast and accurate short read alignment with Burrows-Wheeler Transform**  
-Heng Li and Richard Durbin  
-*Bioinformatics, Volume 25, Aricle 1754-60 (2009)*  
-**DOI**: <https://doi.org/10.1093/bioinformatics/btp324>  
-**Publication**:
-[https://pubmed.ncbi.nlm.nih.gov/19451168\@](https://pubmed.ncbi.nlm.nih.gov/19451168)  
-**Source code**: <https://github.com/lh3/bwa>  
-**Documentation**: <http://bio-bwa.sourceforge.net>
-
-**TRIMMOMATIC: A flexible read trimming tool for Illumina NGS data**  
-Bolger, A. M., Lohse, M., & Usadel, B. \_(2014)  
-**DOI**: <https://doi.org/10.1093/bioinformatics/btu170>  
-**Publication**: [Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: A
-flexible trimmer for Illumina Sequence Data. Bioinformatics,
-btu170](https://academic.oup.com/bioinformatics/article/30/15/2114/2390096)  
-**Source code**: <https://github.com/usadellab/Trimmomatic>  
-**Documentation**:
-
-**MultiQC: summarize analysis results for multiple tools and samples in a single
-report**  
-Philip Ewels, Måns Magnusson, Sverker Lundin and Max Käller  
-*Bioinformatics, Volume 32, Issue 19 (2016)*  
-**DOI**: <https://doi.org/10.1093/bioinformatics/btw354>  
-**Publication**:
-<https://academic.oup.com/bioinformatics/article/32/19/3047/2196507>  
-**Source code**: <https://github.com/ewels/MultiQC>  
-**Documentation**: <https://multiqc.info>
-
-**FastQC: A quality control tool for high throughput sequence data**  
-Simon Andrews  
-*Online (2010)*  
-**DOI**: <https://doi.org/>  
-**Publication**:  
-**Source code**: <https://github.com/s-andrews/FastQC>  
-**Documentation**: <https://www.bioinformatics.babraham.ac.uk/projects/fastqc>
+---
+
+## Outputs
+
+### QC (`qc/`)
+
+| Path | Content |
+|---|---|
+| `qc/fastqc/` | FastQC HTML and ZIP reports per sample |
+| `qc/markdup/` | Picard MarkDuplicates metrics |
+| `qc/samtools/` | samtools stats per BAM |
+| `qc/qualimap_hc/` | Qualimap coverage reports |
+| `qc/validatesam/` | Picard ValidateSamFile reports |
+| `qc/vcf_stats/` | bcftools stats and VCFtools frequency files |
+| `qc/multiqc.html` | Aggregated MultiQC report |
+
+### Alignments
+
+| Path | Content |
+|---|---|
+| `mapped/{sample}_{unit}_sorted.bam` | Per-unit sorted BAM |
+| `merged/{sample}_merged.bam` | Multi-lane merged BAM |
+| `dedup/{sample}_sorted_md.bam` | Deduplicated BAM (or passthrough for ddRAD-seq) |
+
+### Variant calls (`calls/`)
+
+| Path | Content |
+|---|---|
+| `calls/{sample}.{chrom}.g.vcf.gz` | Per-sample GVCF (HaplotypeCaller) |
+| `calls/all.{chrom}.vcf.gz` | Joint genotyped VCF per chromosome |
+| `calls/all.{chrom}.filtered.vcf.gz` | Hard-filtered VCF per chromosome |
+| `calls/all.filtered.vcf.gz` | Genome-wide merged filtered VCF |
+
+### Workflow graphs (`graphs/`)
+
+DAG, rule graph, and file graph in PDF and PNG formats, generated automatically after the pipeline run.
+
+---
+
+## Pipeline architecture
+
+```
+FastQC → Trimmomatic → BWA-MEM → merge_bams → MarkDuplicates
+                                                      ↓
+                                           [all_bams_ready barrier]
+                                                      ↓
+                           ┌──── HaplotypeCaller (per sample × chromosome)
+                           │           ↓
+                           │     GenomicsDBImport
+                           │           ↓
+                           │     GenotypeGVCFs ────────────────┐
+                           │                                    ↓
+                           └──── UnifiedGenotyper     VariantFiltration
+                                                               ↓
+                                              bcftools stats + VCFtools + MultiQC
+```
+
+---
+
+## Configuration reference
+
+### Trimmomatic parameters (`config/config.yaml`)
+
+| Parameter | Description |
+|---|---|
+| `adapters` | Path to adapter sequences |
+| `LEADING` | Minimum quality to keep a leading base |
+| `TRAILING` | Minimum quality to keep a trailing base |
+| `SLIDINGWINDOW` | Window size : minimum average quality |
+| `AVGQUAL` | Minimum average read quality |
+| `MINLEN` | Minimum read length after trimming |
+
+### Hard filtering thresholds
+
+Configured under `filtering.hard` in `config/config.yaml`. Separate thresholds for SNVs and indels. Applied by GATK VariantFiltration; variants failing any filter are tagged `FILTER` (not removed).
+
+---
+
+## Support
+
+- Open an [issue on GitHub](https://github.com/ltalignani/shave/issues)
+- Email: [loic.talignani@ird.fr](mailto:loic.talignani@ird.fr)
+
+---
+
+## Version
+
+**V4.2026.06.05** — see [CHANGELOG.md](CHANGELOG.md) for full history.
+
+---
+
+## License
+
+[GNU AGPL v3](https://www.gnu.org/licenses/agpl-3.0.html)
+
+---
+
+## Authors
+
+Loïc Talignani — UMR MIVEGEC, IRD Montpellier
+
+---
+
+## References
+
+**Sustainable data analysis with Snakemake** — Mölder *et al.*, *F1000Research* (2021)
+DOI: [10.12688/f1000research.29032.2](https://doi.org/10.12688/f1000research.29032.2)
+
+**Fast and accurate short read alignment with Burrows-Wheeler Transform** — Li & Durbin, *Bioinformatics* (2009)
+DOI: [10.1093/bioinformatics/btp324](https://doi.org/10.1093/bioinformatics/btp324)
+
+**TRIMMOMATIC: A flexible read trimming tool for Illumina NGS data** — Bolger *et al.*, *Bioinformatics* (2014)
+DOI: [10.1093/bioinformatics/btu170](https://doi.org/10.1093/bioinformatics/btu170)
+
+**A framework for variation discovery and genotyping using next-generation DNA sequencing data** — DePristo *et al.*, *Nature Genetics* (2011)
+DOI: [10.1038/ng.806](https://doi.org/10.1038/ng.806)
+
+**Twelve years of SAMtools and BCFtools** — Danecek *et al.*, *GigaScience* (2021)
+DOI: [10.1093/gigascience/giab008](https://doi.org/10.1093/gigascience/giab008)
+
+**MultiQC: summarize analysis results for multiple tools and samples in a single report** — Ewels *et al.*, *Bioinformatics* (2016)
+DOI: [10.1093/bioinformatics/btw354](https://doi.org/10.1093/bioinformatics/btw354)
+
+**FastQC: A quality control tool for high throughput sequence data** — Andrews (2010)
+[github.com/s-andrews/FastQC](https://github.com/s-andrews/FastQC)

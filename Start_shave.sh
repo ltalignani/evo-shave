@@ -32,7 +32,7 @@ echo -e "Load Modules:"
 echo ""
 
 module purge
-module load snakemake/8.27.1
+module load snakemake/9.4.0
 module load conda
 
 # set umask to avoid locking each other out of directories
@@ -211,6 +211,12 @@ for graph in ${graph_list} ; do
 done
 
 snakemake --workflow-profile profile --keep-going --rerun-incomplete --directory ${workdir} --summary > ${workdir}/files_summary.txt 2>&1
+
+echo ""
+echo -e "Generating Snakemake HTML report:"
+echo ""
+snakemake --workflow-profile profile --directory ${workdir}/ --report ${workdir}/snakemake_report.html 2>&1
+echo "Report written to: ${workdir}/snakemake_report.html"
 
 ###### End managment ######
 echo ""

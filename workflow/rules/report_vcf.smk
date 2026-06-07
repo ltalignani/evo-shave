@@ -18,7 +18,12 @@ rule report_vcf:
         missing_ind=rules.vcf_stats.output.missing_ind,
         miss=rules.vcf_stats.output.miss,
     output:
-        report="qc/vcf_stats/report_vcf_{chrom}.html",
+        report=report(
+            "qc/vcf_stats/report_vcf_{chrom}.html",
+            caption="../report/report_vcf.rst",
+            category="Variant Reports",
+            subcategory="{chrom}",
+        ),
     conda:
         "../envs/r.yaml"
     log:

@@ -33,7 +33,11 @@ rule multiqc:
         ),
         *(["qc/vcf_stats/all.filtered.bcftools_stats.txt"] if vcf_output_mode != "per_contig" else []),
     output:
-        "qc/multiqc.html",
+        report(
+            "qc/multiqc.html",
+            caption="../report/multiqc.rst",
+            category="Quality Control",
+        ),
         directory("qc/multiqc_data"),
     params:
         extra="--verbose",
@@ -73,5 +77,9 @@ use rule multiqc as multiqc_HC with:
         ),
         *(["qc/vcf_stats/all.filtered.bcftools_stats.txt"] if vcf_output_mode != "per_contig" else []),
     output:
-        "qc/multiqc.html",
+        report(
+            "qc/multiqc.html",
+            caption="../report/multiqc.rst",
+            category="Quality Control",
+        ),
         directory("qc/multiqc_data"),
