@@ -32,13 +32,15 @@ rule genotype_gvcfs:
         "../envs/gatk4.yaml"
     shell:
         """
-gatk --java-options \"-Xmx{{resources.mem_mb}}m\" GenotypeGVCFs \
+        gatk --java-options "{params.java_opts} -Xmx{resources.mem_mb}m \
+            -Djava.io.tmpdir={resources.tmpdir}" \
+            GenotypeGVCFs \
             -R {input.ref} \
             -V gendb://{params.db_dir} \
             -L {params.intervals} \
             {params.extra} \
             --tmp-dir {resources.tmpdir} \
             -O {output} \
-            &> {log}
+            > {log} 2>&1
         """
 

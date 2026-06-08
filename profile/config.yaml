@@ -149,8 +149,8 @@ set-resources:
   genomics_db_import:
     slurm_partition: "long"
     cpus_per_task: 1
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)  # reduced from 24000; calibrate with monitor_memory.sh
-    runtime: attempt * 720  # reduced from 14400; not yet observed — increase if timeouts occur
+    mem_mb: max((1.5 * input.size_mb) * attempt, 32000)  # restored: 95 samples requires ~32 GB
+    runtime: attempt * 720  # reduced from 14400; increase if timeouts occur
   genotype_gvcfs:
     slurm_partition: "long"
     cpus_per_task: 6

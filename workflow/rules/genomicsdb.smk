@@ -1,15 +1,11 @@
-# FUNCTIONS AND COMMANDS
-def get_mem_mb(wildcards, attempt):
-    return max(32000, attempt * 16000)  # Minimum de 32 Go
-
-
 rule genomics_db_import:
     message:
         "GATK's GenomicsDBImport for multiple g.vcfs for chromosome {wildcards.chrom}"
     resources:
         partition="long",
-        mem_mb=get_mem_mb,
-        java_mem_overhead_mb=12000,
+        cpus_per_task=1,
+        mem_mb=lambda wildcards, attempt: max(32000, attempt * 16000),
+        java_mem_overhead_mb=4000,
         runtime=10080,
         tmpdir=config["resources"]["tmpdir"],
     input:
@@ -25,9 +21,26 @@ rule genomics_db_import:
         "logs/gatk4/genomicsdbimport/genomicsdbimport.{chrom}.log",
     params:
         intervals=lambda wildcards: wildcards.chrom,
-        db_action="create",
-        extra="",
+        extra="--batch-size 50",
         java_opts="-XX:ParallelGCThreads=10",
-    threads: 1
-    wrapper:
-        "v4.6.0/bio/gatk/genomicsdbimport"
+    conda:
+        "../envs/gatk4.yaml"
+    shell:
+        """
+        # Remove workspace unconditionally: Snakemake pre-creates directory() outputs
+        # with a .snakemake_timestamp file, which makes GATK's TileDB fail.
+        rm -rf {output.db}
+
+        gatk --java-options \
+            "{params.java_opts} \
+             -Xmx$(( {resources.mem_mb} - {resources.java_mem_overhead_mb} ))M \
+             -Djava.io.tmpdir={resources.tmpdir}" \
+            GenomicsDBImport \
+            $(printf ' --variant %s' {input.gvcfs}) \
+            --genomicsdb-workspace-path {output.db} \
+            --intervals {params.intervals} \
+            --tmp-dir {resources.tmpdir} \
+            --reader-threads 4 \
+            {params.extra} \
+            > {log} 2>&1
+        """

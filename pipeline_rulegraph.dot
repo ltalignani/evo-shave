@@ -1,0 +1,81 @@
+digraph snakemake_dag {
+    graph[bgcolor=white, margin=0];
+    node[shape=box, style=rounded, fontname=sans,                 fontsize=10, penwidth=2];
+    edge[penwidth=2, color=grey];
+	0[label = "all", color = "0.05 0.6 0.85", style="rounded"];
+	1[label = "create_directories", color = "0.20 0.6 0.85", style="rounded"];
+	2[label = "validatesam_HC", color = "0.64 0.6 0.85", style="rounded"];
+	3[label = "markduplicates_bam", color = "0.30 0.6 0.85", style="rounded"];
+	4[label = "merge_bams", color = "0.32 0.6 0.85", style="rounded"];
+	5[label = "bwa_mem", color = "0.15 0.6 0.85", style="rounded"];
+	6[label = "trimmomatic", color = "0.59 0.6 0.85", style="rounded"];
+	7[label = "multiqc_HC", color = "0.36 0.6 0.85", style="rounded"];
+	8[label = "fastqc", color = "0.21 0.6 0.85", style="rounded"];
+	9[label = "samtools_stats_HC", color = "0.48 0.6 0.85", style="rounded"];
+	10[label = "qualimap_hc", color = "0.39 0.6 0.85", style="rounded"];
+	11[label = "bcftools_stats_raw", color = "0.12 0.6 0.85", style="rounded"];
+	12[label = "genotype_gvcfs", color = "0.27 0.6 0.85", style="rounded"];
+	13[label = "genomics_db_import", color = "0.26 0.6 0.85", style="rounded"];
+	14[label = "HaplotypeCaller", color = "0.00 0.6 0.85", style="rounded"];
+	15[label = "samtools_index", color = "0.45 0.6 0.85", style="rounded"];
+	16[label = "all_bams_ready", color = "0.06 0.6 0.85", style="rounded"];
+	17[label = "bcftools_stats_filtered", color = "0.09 0.6 0.85", style="rounded"];
+	18[label = "merge_filtered_vcf", color = "0.33 0.6 0.85", style="rounded"];
+	19[label = "select_pass_snvs", color = "0.53 0.6 0.85", style="rounded"];
+	20[label = "filter_snvs", color = "0.24 0.6 0.85", style="rounded"];
+	21[label = "select_snvs", color = "0.55 0.6 0.85", style="rounded"];
+	22[label = "select_pass_indels", color = "0.52 0.6 0.85", style="rounded"];
+	23[label = "filter_indels", color = "0.23 0.6 0.85", style="rounded"];
+	24[label = "select_indels", color = "0.50 0.6 0.85", style="rounded"];
+	25[label = "bcftools_stats_genome", color = "0.11 0.6 0.85", style="rounded"];
+	26[label = "bcftools_concat", color = "0.08 0.6 0.85", style="rounded"];
+	27[label = "vcf_stats", color = "0.65 0.6 0.85", style="rounded"];
+	28[label = "report_vcf", color = "0.44 0.6 0.85", style="rounded"];
+	26 -> 0
+	7 -> 0
+	1 -> 0
+	14 -> 0
+	28 -> 0
+	2 -> 0
+	27 -> 0
+	11 -> 0
+	17 -> 0
+	4 -> 0
+	25 -> 0
+	18 -> 0
+	3 -> 2
+	4 -> 3
+	5 -> 4
+	6 -> 5
+	9 -> 7
+	10 -> 7
+	11 -> 7
+	17 -> 7
+	3 -> 7
+	8 -> 7
+	25 -> 7
+	3 -> 9
+	3 -> 10
+	12 -> 11
+	13 -> 12
+	14 -> 13
+	15 -> 14
+	3 -> 14
+	16 -> 14
+	3 -> 15
+	15 -> 16
+	3 -> 16
+	18 -> 17
+	22 -> 18
+	19 -> 18
+	20 -> 19
+	21 -> 20
+	12 -> 21
+	23 -> 22
+	24 -> 23
+	12 -> 24
+	26 -> 25
+	18 -> 26
+	18 -> 27
+	27 -> 28
+}            
