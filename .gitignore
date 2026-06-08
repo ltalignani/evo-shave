@@ -1,5 +1,6 @@
 .snakemake
 .claude
+.env/
 .DS_Store
 resources/genomes/
 resources/indexes/
@@ -10,6 +11,7 @@ CLAUDE.md
 trimmed/
 graphs/
 mapped/
+condarc
 fixed/
 dedup/
 calls/
