@@ -29,6 +29,4 @@ rule report_vcf:
     log:
         "logs/vcf_stats/report_{chrom}.o",
     script:
-        """
-        ../scripts/report_vcf.Rmd
-        """
+        "../scripts/report_vcf.Rmd"
