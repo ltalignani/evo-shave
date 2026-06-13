@@ -28,8 +28,8 @@ SHAVE runs on a **local workstation** or on a **SLURM cluster**, with fully auto
 
 ### Sequencing library support
 
-- **Whole-genome sequencing** (WGS) — standard MarkDuplicates workflow
-- **ddRAD-seq** — MarkDuplicates bypass (`markdup.skip: true`) to avoid systematic flagging of enzyme-cut reads as duplicates
+- **Whole-genome sequencing** (WGS) — standard MarkDuplicates and hard-filtering workflow
+- **ddRAD-seq** — MarkDuplicates bypass (`markdup.skip: true`) and hard-filtering bypass (`filtering.skip: true`) to avoid systematic artifacts from enzymatic digestion
 - **Multi-lane samples** — BAMs from multiple sequencing lanes are automatically merged per sample before downstream processing
 
 ### Reference genomes
@@ -69,28 +69,28 @@ SHAVE runs on a **local workstation** or on a **SLURM cluster**, with fully auto
 
 ## Quick start
 
-### Local execution
-
 ```bash
-conda activate snakemake
-snakemake --cores 32 --use-conda --keep-going --rerun-incomplete --retries 5 --local-cores 8
+# SLURM cluster
+sbatch run_shave.sh
+
+# Local (Mac Apple Silicon or Linux)
+bash run_shave.sh
+
+# Dry-run only
+DRY_RUN=true bash run_shave.sh
 ```
 
-### SLURM cluster
-
-```bash
-sbatch Start_shave.sh
-```
-
-Edit `profile/config.yaml` to set your SLURM account and partition names before submitting.
+`run_shave.sh` detects the environment automatically (`$SLURM_JOB_ID`, `uname -m`) and configures Snakemake accordingly. Edit the header variables (`LOCAL_CORES_CAP`, `CREATE_ENVS`, `DRY_RUN`) to tune behaviour without touching the rest of the script.
 
 ---
 
 ## Prerequisites
 
-- [Miniconda or Anaconda](https://docs.conda.io/en/latest/miniconda.html) (conda ≥ 24.0 recommended)
-- [Snakemake](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html) ≥ 9.0.0 (tested with 9.4.0)
-- [snakemake-executor-plugin-slurm](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html) (cluster only)
+- [Miniforge3](https://github.com/conda-forge/miniforge) or Miniconda (conda ≥ 24.7.1)
+- Python ≥ 3.10 (for the `.env` virtual environment)
+- graphviz — `brew install graphviz` (Mac) / `apt install graphviz` (Linux) — optional, for workflow graphs
+
+**Mac Apple Silicon:** install Miniforge3 for `osx-arm64`. The pipeline sets `CONDA_SUBDIR=osx-64` automatically so that bioconda packages are resolved via Rosetta 2.
 
 ---
 
@@ -100,10 +100,12 @@ Edit `profile/config.yaml` to set your SLURM account and partition names before 
 git clone https://github.com/ltalignani/shave.git
 cd shave/
 
-# Create the Snakemake environment
-conda create -c conda-forge -c bioconda -n snakemake snakemake
-conda activate snakemake
+# Create the Python virtual environment with pinned dependencies
+python3 -m venv .env
+.env/bin/pip install -r requirements.txt
 ```
+
+`requirements.txt` installs Snakemake ≥ 9.22.0, the SLURM executor plugin, and the graphviz Python binding. The pipeline uses `.env/bin/snakemake` automatically when the `.env` directory is present.
 
 Update the repository at any time:
 
@@ -158,9 +160,12 @@ refs:
 # Variant caller: "HaplotypeCaller" or "UnifiedGenotyper"
 caller: "HaplotypeCaller"
 
-# ddRAD-seq: skip MarkDuplicates
+# ddRAD-seq: skip MarkDuplicates and hard filtering
 markdup:
-  skip: false
+  skip: false   # true for ddRAD-seq
+
+filtering:
+  skip: false   # true for ddRAD-seq (WGS thresholds are biologically inappropriate)
 
 # Chromosome / scaffold selection
 chromosomes:
@@ -170,38 +175,35 @@ chromosomes:
   vcf_output: "both"  # "per_contig" | "merged" | "both"
 ```
 
+When `filtering.skip: true`, all GATK VariantFiltration rules are removed from the DAG. VCF stats, genome-wide concatenation, and MultiQC all remain active and operate on the raw VCFs (`calls/all.raw.vcf.gz`).
+
 ### 4. Run the pipeline
 
-**Local machine:**
-
 ```bash
-conda activate snakemake
-snakemake --cores 32 --use-conda --keep-going --rerun-incomplete --retries 5 --local-cores 8
+# SLURM cluster
+sbatch run_shave.sh
+
+# Local (Mac Apple Silicon or Linux) — auto-detects CPU count
+bash run_shave.sh
 ```
 
-**SLURM cluster:**
-
-```bash
-sbatch Start_shave.sh
-```
-
-The submission script handles: FastQ renaming, directory creation, conda environment setup, optional dry-run, and results archiving prompt.
+`run_shave.sh` handles: FastQ renaming, directory creation, conda environment setup, optional dry-run, post-run graph generation, and results archiving prompt.
 
 ### Dry-run
 
-`Start_shave.sh` runs a dry-run by default to preview the job DAG. On large datasets (many samples or highly fragmented genomes), disable it by editing line 58:
+Set `DRY_RUN=true` in the header of `run_shave.sh`, or pass it inline:
 
 ```bash
-dry_run="false"
+DRY_RUN=true bash run_shave.sh
 ```
 
-Keep it enabled when running for the first time, after modifying rules, or after changing the sample list.
+Use it when running for the first time, after modifying rules, or after changing the sample list.
 
 ---
 
 ## SLURM resource management
 
-Resources are defined in `profile/config.yaml` and scale automatically with file size and retry count:
+Resources are defined in `profile/cluster/config.yaml` and scale automatically with file size and retry count:
 
 ```yaml
 set-resources:
@@ -221,10 +223,10 @@ A barrier rule (`all_bams_ready`) prevents HaplotypeCaller and UnifiedGenotyper 
 
 ### Cluster module requirements
 
-`Start_shave.sh` loads modules at submission time. Edit lines 35–36 to match your cluster:
+`run_shave.sh` loads modules at submission time. Edit the `cluster)` block to match your cluster:
 
 ```bash
-module load snakemake/8.27.1
+module load snakemake/9.4.0
 module load conda
 ```
 
@@ -297,8 +299,9 @@ transfer:
 |---|---|
 | `calls/{sample}.{chrom}.g.vcf.gz` | Per-sample GVCF (HaplotypeCaller) |
 | `calls/all.{chrom}.vcf.gz` | Joint genotyped VCF per chromosome |
-| `calls/all.{chrom}.filtered.vcf.gz` | Hard-filtered VCF per chromosome |
-| `calls/all.filtered.vcf.gz` | Genome-wide merged filtered VCF |
+| `calls/all.{chrom}.filtered.vcf.gz` | Hard-filtered VCF per chromosome (`filtering.skip: false`) |
+| `calls/all.filtered.vcf.gz` | Genome-wide merged filtered VCF (`filtering.skip: false`) |
+| `calls/all.raw.vcf.gz` | Genome-wide merged raw VCF (`filtering.skip: true`) |
 
 ### Workflow graphs (`graphs/`)
 
@@ -343,6 +346,8 @@ FastQC → Trimmomatic → BWA-MEM → merge_bams → MarkDuplicates
 
 Configured under `filtering.hard` in `config/config.yaml`. Separate thresholds for SNVs and indels. Applied by GATK VariantFiltration; variants failing any filter are tagged `FILTER` (not removed).
 
+Set `filtering.skip: true` to bypass all filtering steps. All QC rules (bcftools stats, VCFtools, MultiQC) remain active and operate on the raw VCFs. Recommended for ddRAD-seq, where WGS-calibrated thresholds are biologically inappropriate.
+
 ---
 
 ## Support
@@ -354,7 +359,7 @@ Configured under `filtering.hard` in `config/config.yaml`. Separate thresholds f
 
 ## Version
 
-**V4.2026.06.05** — see [CHANGELOG.md](CHANGELOG.md) for full history.
+**V5.2026.06.14** — see [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ---
 

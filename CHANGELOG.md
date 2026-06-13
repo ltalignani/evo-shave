@@ -5,6 +5,103 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [V5.2026.06.14] - 2026-06-14
+
+### Added
+
+#### `config/config.yaml` — VCF filtering skip option
+
+```yaml
+filtering:
+  skip: true   # Set to true for ddRAD-seq (hard filtering thresholds are biologically inappropriate)
+```
+
+In ddRAD-seq, reads are generated from enzymatically digested fragments rather than whole-genome sequencing. GATK hard-filtering thresholds (QD, FS, MQ, MQRankSum, ReadPosRankSum) were calibrated for WGS data and systematically flag biologically valid variants in RADseq data. Setting `skip: true` bypasses all hard-filtering steps while keeping all downstream QC rules active.
+
+#### `workflow/rules/common.smk` — `skip_filtering` flag and `get_final_vcf()` helper
+
+- `skip_filtering = config.get("filtering", {}).get("skip", False)` reads the toggle at parse time
+- `get_final_vcf(wildcards)` routes downstream rules dynamically: returns the raw VCF path when filtering is skipped, the filtered VCF path otherwise. Handles both HaplotypeCaller and UnifiedGenotyper outputs.
+
+#### `workflow/rules/filter_vcf.smk` — Conditional activation
+
+All 7 filtering rules (`select_snvs`, `select_indels`, `filter_snvs`, `filter_indels`, `select_pass_snvs`, `select_pass_indels`, `merge_filtered_vcf`) are now wrapped in `if not skip_filtering:` and are entirely absent from the DAG when filtering is skipped.
+
+#### `run_shave.sh` — Multi-environment launcher (new file, replaces `Start_shave.sh`)
+
+Single entry point that auto-detects the execution environment at runtime and configures Snakemake accordingly:
+
+| Detection | Environment | Profile | Behaviour |
+|---|---|---|---|
+| `$SLURM_JOB_ID` set | `cluster` | `profile/cluster` | `--executor slurm --jobs 500`, loads modules |
+| `uname -m == arm64` | `local_mac` | `profile/local` | `CONDA_SUBDIR=osx-64`, auto-detects cores |
+| otherwise | `local_linux` | `profile/local` | auto-detects cores via `nproc` |
+
+Key features:
+
+- User-tunable header: `LOCAL_CORES_CAP`, `CREATE_ENVS`, `DRY_RUN`
+- Preflight checks: Snakemake ≥ 9, conda, graphviz (optional)
+- Opportunistic graph generation (dag, rulegraph, filegraph) if `dot` is available
+- PATH fix: `$(dirname "${CONDA_EXE}")` is prepended so Snakemake subprocesses always find the correct conda binary
+- SBATCH directives at top of file — ignored when run locally with `bash`
+
+#### `profile/cluster/` — Cluster-specific profile (new directory)
+
+`profile/cluster/config.yaml` and `profile/cluster/hard.yaml` extracted from the former `profile/` root. Content unchanged; only the path moves. `run_shave.sh` and `rebuild_conda_env.sh` updated to reference the new path.
+
+#### `profile/local/config.yaml` — Local execution profile (new file)
+
+Minimal profile for local runs:
+
+- `executor: local`, `software-deployment-method: conda`, `conda-frontend: conda`
+- `latency-wait: 5`, `retries: 2`, `keep-going: true`
+- Per-rule resource overrides for local hardware (HaplotypeCaller, genomics_db_import, genotype_gvcfs, bwa_mem, trimmomatic, fastqc)
+- No SLURM directives
+
+#### `requirements.txt` — Python virtual environment specification (new file)
+
+Pinned dependencies for the local `.env`:
+
+```
+snakemake>=9.22.0
+snakemake-executor-plugin-slurm>=0.4.0
+graphviz>=0.20
+```
+
+Setup: `python3 -m venv .env && .env/bin/pip install -r requirements.txt`
+
+### Changed
+
+#### `workflow/rules/bcftools_stats.smk` — Conditional rules and dynamic routing
+
+- `bcftools_stats_filtered` (per-chromosome stats on filtered VCF) disabled when `skip_filtering: true`
+- `bcftools_concat` and `bcftools_stats_genome` always produce a genome-wide VCF when `skip_filtering: true`, regardless of `vcf_output` mode — the concatenation uses the raw caller output paths directly
+- Output filenames reflect the actual content: `all.raw.vcf.gz` / `all.raw.bcftools_stats.txt` when filtering is skipped, `all.filtered.*` otherwise
+
+#### `workflow/rules/vcf_stats.smk` — Dynamic input
+
+VCFtools stats input updated from the hardcoded filtered VCF path to `get_final_vcf(wildcards)`, routing to the correct file depending on `skip_filtering`.
+
+#### `workflow/rules/multiqc.smk` — Conditional bcftools inputs
+
+Two pre-computed lists (`_mqc_bcftools_per_chrom`, `_mqc_bcftools_genome`) replace previously hardcoded filtered paths. Both are empty (or reduced) when `skip_filtering: true`, preventing `MissingInputException` at DAG construction.
+
+#### `workflow/Snakefile` — `rule all` targets updated for skip mode
+
+`_vcf_per_chrom`, `_vcf_merged`, `_bcftools_filtered`, and `_bcftools_genome` pre-computed target lists updated: when `skip_filtering: true`, filtered outputs are removed and replaced by their raw equivalents.
+
+#### `rebuild_conda_env.sh` — Profile path updated
+
+`--workflow-profile profile` → `--workflow-profile profile/cluster` to match the new profile directory layout.
+
+### Fixed
+
+#### `run_shave.sh` — Broken conda binary on Apple Silicon
+
+When mambaforge (x86_64) was present alongside miniconda3 (ARM64), `which conda` could resolve to the broken mambaforge binary. Fixed by prepending `$(dirname "${CONDA_EXE}")` to PATH — `CONDA_EXE` is set by the active conda init block and always points to the correct installation.
+
+---
+
 ## [V4.2026.06.05] - 2026-06-05
 
 ### Added
