@@ -1,10 +1,20 @@
 channels:
   - conda-forge
+  - bioconda
 dependencies:
+  - libblas=*=*netlib*  # pin blas implementation to avoid libblas.so.3 corruption on NFS
   - r-base
   - r-knitr
+  - r-rmarkdown
+  - r-rmdformats
+  - r-plotly
   - r-dt
   - r-ggplot2
-  - r-rmarkdown
+  - r-htmltools
+  - r-htmlwidgets
+  - r-gridextra
+  - r-tidyverse
+  - r-magrittr
+  - r-stringr
   - pandoc
   - nodejs

@@ -83,6 +83,7 @@ transfer:
 
 ### VCF FILTERING ------------------------------------------------------------------------------------
 filtering:
+  skip: true # Set to true for ddRAD-seq (hard filtering thresholds are not appropriate for RADseq data)
   hard:
     # hard filtering as outlined in GATK docs
     # (https://gatkforums.broadinstitute.org/gatk/discussion/2806/howto-apply-hard-filters-to-a-call-set)

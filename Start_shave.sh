@@ -77,7 +77,7 @@ for file in "$input_directory"/*.fq.gz "$input_directory"/*.fastq.gz; do
 
     # Skip si déjà au bon format {sample}_L{n}_R{1|2}.fastq.gz
     if [[ "$filename" =~ ^.+_L[0-9]+_R[12]\.fastq\.gz$ ]]; then
-        echo "Déjà correct : $filename"
+        echo "File OK : $filename"
         continue
     fi
 
@@ -157,16 +157,14 @@ export PYTHONWARNINGS="ignore::UserWarning:pkg_resources"
 export TMPDIR=/shared/projects/invalbo/tmp/
 mkdir -p ${TMPDIR}
 
-echo -e "Unlocking working directory:"
-echo ""
-
-snakemake --workflow-profile profile --directory ${workdir}/ --unlock 2>&1
-
-echo ""
-echo -e "List conda envs:"
-echo ""
-
-snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --list-conda-envs 2>&1
+# Unlock only if a lock file exists (avoids one unnecessary DAG build)
+if [ -n "$(ls ${workdir}/.snakemake/locks/ 2>/dev/null)" ]; then
+    echo -e "Unlocking working directory:"
+    echo ""
+    snakemake --workflow-profile profile --directory ${workdir}/ --unlock 2>&1
+else
+    echo -e "No lock file found — skipping unlock."
+fi
 
 # Conda env cleanup disabled — run manually to reclaim disk space after major workflow changes:
 # snakemake --workflow-profile profile --directory ${workdir}/ --conda-cleanup-envs
@@ -175,7 +173,14 @@ echo ""
 echo -e "Conda environments setup:"
 echo ""
 
-snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-create-envs-only 2>&1
+# Skip --conda-create-envs-only if all envs already exist (saves one full DAG build).
+# Set create_envs="true" on first run or after modifying workflow/envs/*.yaml files.
+create_envs="false"
+if [ "${create_envs}" == "true" ]; then
+    snakemake --workflow-profile profile --directory ${workdir}/ --keep-going --rerun-incomplete --cores ${max_threads} --use-conda --conda-create-envs-only 2>&1
+else
+    echo -e "Skipping conda env creation (set create_envs=true to force rebuild)."
+fi
 
 if [ "${dry_run}" == "true" ]; then
     echo ""

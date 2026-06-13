@@ -1,0 +1,32 @@
+executor: "local"
+software-deployment-method: conda
+conda-frontend: conda
+latency-wait: 5
+rerun-incomplete: true
+keep-going: true
+printshellcmds: true
+retries: 2
+
+# Local profile: no SLURM settings.
+# cores and local-cores are set by run_shave.sh based on detected CPU count.
+# set-resources entries here only override rule-level defaults where needed locally;
+# slurm_partition / slurm_account are intentionally absent.
+set-resources:
+  HaplotypeCaller:
+    cpus_per_task: 4
+    mem_mb: 8000
+  genomics_db_import:
+    cpus_per_task: 1
+    mem_mb: 16000
+  genotype_gvcfs:
+    cpus_per_task: 4
+    mem_mb: 16000
+  bwa_mem:
+    cpus_per_task: 8
+    mem_mb: 8000
+  trimmomatic:
+    cpus_per_task: 4
+    mem_mb: 6000
+  fastqc:
+    cpus_per_task: 2
+    mem_mb: 4000

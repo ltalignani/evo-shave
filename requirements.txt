@@ -1,0 +1,18 @@
+# Python dependencies for the local .env virtual environment
+# Setup: python -m venv .env && .env/bin/pip install -r requirements.txt
+#
+# System dependencies (install separately):
+#   conda >= 24.7   https://github.com/conda-forge/miniforge
+#   graphviz        brew install graphviz  [Mac] | apt install graphviz  [Linux]
+#
+# On Mac Apple Silicon: CONDA_SUBDIR=osx-64 is set automatically by run_shave.sh
+# to ensure bioconda packages are available via Rosetta 2.
+
+# Core pipeline runner
+snakemake>=9.22.0
+
+# SLURM executor plugin (required for cluster runs; harmless on local)
+snakemake-executor-plugin-slurm>=0.4.0
+
+# Graphviz Python binding (provides 'dot' command inside .env when installed)
+graphviz>=0.20

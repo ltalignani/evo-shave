@@ -2,6 +2,22 @@
 sample_unit_pairs = list(units.index)  # Liste explicite des tuples (sample, unit)
 samples_list = samples.index.tolist()  # Liste explicite des samples
 
+# Dynamic bcftools stats inputs for MultiQC depending on filtering mode
+_mqc_bcftools_per_chrom = (
+    []
+    if skip_filtering
+    else expand("qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt", chrom=chromosomes)
+)
+_mqc_bcftools_genome = (
+    ["qc/vcf_stats/all.raw.bcftools_stats.txt"]
+    if skip_filtering
+    else (
+        ["qc/vcf_stats/all.filtered.bcftools_stats.txt"]
+        if vcf_output_mode != "per_contig"
+        else []
+    )
+)
+
 
 rule multiqc:
     input:
@@ -27,11 +43,8 @@ rule multiqc:
             "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt",
             chrom=chromosomes,
         ),
-        expand(
-            "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt",
-            chrom=chromosomes,
-        ),
-        *(["qc/vcf_stats/all.filtered.bcftools_stats.txt"] if vcf_output_mode != "per_contig" else []),
+        *_mqc_bcftools_per_chrom,
+        *_mqc_bcftools_genome,
     output:
         report(
             "qc/multiqc.html",
@@ -71,11 +84,8 @@ use rule multiqc as multiqc_HC with:
             "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt",
             chrom=chromosomes,
         ),
-        expand(
-            "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt",
-            chrom=chromosomes,
-        ),
-        *(["qc/vcf_stats/all.filtered.bcftools_stats.txt"] if vcf_output_mode != "per_contig" else []),
+        *_mqc_bcftools_per_chrom,
+        *_mqc_bcftools_genome,
     output:
         report(
             "qc/multiqc.html",

@@ -61,31 +61,43 @@ localrules:
     all_bams_ready,
 
 
-# Pre-compute VCF output targets based on vcf_output_mode and enable_variant_calling.
-# chromosomes and vcf_output_mode are defined in rules/common.smk.
+# Pre-compute VCF output targets based on vcf_output_mode, enable_variant_calling,
+# and skip_filtering. chromosomes, vcf_output_mode, skip_filtering defined in common.smk.
 if config.get("enable_variant_calling", True):
-    _vcf_per_chrom = expand("calls/all.{chrom}.filtered.vcf.gz", chrom=chromosomes)
-    _vcf_merged = ["calls/all.filtered.vcf.gz"]
     _bcftools_raw = expand(
         "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt", chrom=chromosomes
     )
-    _bcftools_filtered = expand(
-        "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt", chrom=chromosomes
-    )
-    _bcftools_genome = ["qc/vcf_stats/all.filtered.bcftools_stats.txt"]
     _vcftools = expand("qc/vcf_stats/vcf_{chrom}.frq", chrom=chromosomes)
     _reports = expand("qc/vcf_stats/report_vcf_{chrom}.html", chrom=chromosomes)
 
-    if vcf_output_mode == "per_contig":
-        _vcf_outputs = _vcf_per_chrom
-    elif vcf_output_mode == "merged":
+    if skip_filtering:
+        # Raw mode: filtered per-chrom VCFs are not produced; raw VCFs are already
+        # requested by the enable_variant_calling block below.
+        _vcf_per_chrom = []
+        _vcf_merged = ["calls/all.raw.vcf.gz"]
+        _bcftools_filtered = []
+        _bcftools_genome = ["qc/vcf_stats/all.raw.bcftools_stats.txt"]
+        # Genome-wide concat always runs in skip mode regardless of vcf_output_mode
         _vcf_outputs = _vcf_merged
-    else:  # "both"
-        _vcf_outputs = _vcf_per_chrom + _vcf_merged
+        _vcf_qc = _bcftools_raw + _vcftools + _reports + _bcftools_genome
+    else:
+        _vcf_per_chrom = expand("calls/all.{chrom}.filtered.vcf.gz", chrom=chromosomes)
+        _vcf_merged = ["calls/all.filtered.vcf.gz"]
+        _bcftools_filtered = expand(
+            "qc/vcf_stats/{chrom}.filtered.bcftools_stats.txt", chrom=chromosomes
+        )
+        _bcftools_genome = ["qc/vcf_stats/all.filtered.bcftools_stats.txt"]
 
-    _vcf_qc = _bcftools_raw + _bcftools_filtered + _vcftools + _reports
-    if vcf_output_mode != "per_contig":
-        _vcf_qc += _bcftools_genome
+        if vcf_output_mode == "per_contig":
+            _vcf_outputs = _vcf_per_chrom
+        elif vcf_output_mode == "merged":
+            _vcf_outputs = _vcf_merged
+        else:  # "both"
+            _vcf_outputs = _vcf_per_chrom + _vcf_merged
+
+        _vcf_qc = _bcftools_raw + _bcftools_filtered + _vcftools + _reports
+        if vcf_output_mode != "per_contig":
+            _vcf_qc += _bcftools_genome
 else:
     _vcf_outputs = []
     _vcf_qc = []

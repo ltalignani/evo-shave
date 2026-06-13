@@ -11,7 +11,7 @@ rule vcf_stats:
         mem_mb = get_mem_mb,
         runtime = 240,
     input:
-        vcf_file = "calls/all.{chrom}.filtered.vcf.gz"
+        vcf_file=get_final_vcf,
     output:
         freq = "qc/vcf_stats/vcf_{chrom}.frq",
         depth = "qc/vcf_stats/vcf_{chrom}.idepth",

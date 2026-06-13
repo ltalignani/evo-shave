@@ -90,6 +90,22 @@ vcf_output_mode = (
     else "both"
 )
 
+skip_filtering = config.get("filtering", {}).get("skip", False)
+
+
+def get_final_vcf(wildcards):
+    """Return the final per-chromosome VCF for downstream QC rules.
+
+    When filtering.skip is True (e.g. ddRAD-seq), points directly to the raw
+    caller output. When False, points to the hard-filtered merged VCF.
+    """
+    if skip_filtering:
+        if config["caller"] == "HaplotypeCaller":
+            return f"calls/all.{wildcards.chrom}.vcf.gz"
+        else:
+            return f"calls/variants.{wildcards.chrom}.vcf.gz"
+    return f"calls/all.{wildcards.chrom}.filtered.vcf.gz"
+
 
 ##### Wildcard constraints #####
 wildcard_constraints:
