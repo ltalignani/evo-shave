@@ -16,7 +16,7 @@
 # USAGE: sbatch rebuild_conda_env.sh
 
 module purge
-module load snakemake/8.27.1
+module load snakemake/9.4.0
 module load conda
 
 umask 002

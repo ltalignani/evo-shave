@@ -27,6 +27,8 @@ rule merge_bams:
         cpus_per_task=4,
         mem_mb=16000,
         runtime=30,
+    conda:
+        "../envs/picard-3.2.yaml"
     run:
         # Convertir input en liste pour manipulation
         input_files = list(input)
@@ -46,6 +48,5 @@ rule merge_bams:
             bams = " --INPUT ".join(input_files)
             shell(
                 f"""
-                module load picard/2.23.5
                 picard MergeSamFiles --INPUT {bams} --OUTPUT {{output.bam}} --USE_THREADING true --SORT_ORDER coordinate {{params.extra}} --TMP_DIR {{params.tmpdir}} > {{log}} 2>&1"""
             )

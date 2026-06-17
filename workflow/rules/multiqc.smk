@@ -1,8 +1,14 @@
-# Définition correcte des paires sample-unit
-sample_unit_pairs = list(units.index)  # Liste explicite des tuples (sample, unit)
-samples_list = samples.index.tolist()  # Liste explicite des samples
+sample_unit_pairs = list(units.index)
+samples_list = samples.index.tolist()
 
-# Dynamic bcftools stats inputs for MultiQC depending on filtering mode
+_mqc_fastqc = [
+    f"qc/fastqc/{s}_{u}_R{read}.html"
+    for s, u in sample_unit_pairs
+    for read in [1, 2]
+]
+_mqc_markdup = expand("qc/markdup/{sample}_sorted_md_metrics.txt", sample=samples_list)
+_mqc_vcf_raw = expand("qc/vcf_stats/{chrom}.raw.bcftools_stats.txt", chrom=chromosomes)
+
 _mqc_bcftools_per_chrom = (
     []
     if skip_filtering
@@ -18,78 +24,52 @@ _mqc_bcftools_genome = (
     )
 )
 
+if config["caller"] == "UnifiedGenotyper":
 
-rule multiqc:
-    input:
-        expand(
-            "qc/fastqc/{sample}_{unit}_R{read}.html",
-            sample=[s for s, u in sample_unit_pairs],
-            unit=[u for s, u in sample_unit_pairs],
-            read=[1, 2],
-        ),
-        expand(
-            "qc/markdup/{sample}_sorted_md_metrics.txt",
-            sample=samples_list,
-        ),
-        expand(
-            "qc/samtools/{sample}.fixed.sorted.txt",
-            sample=samples_list,
-        ),
-        expand(
-            "qc/qualimap_ug/{sample}_report/qualimapReport.html",
-            sample=samples_list,
-        ),
-        expand(
-            "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt",
-            chrom=chromosomes,
-        ),
-        *_mqc_bcftools_per_chrom,
-        *_mqc_bcftools_genome,
-    output:
-        report(
-            "qc/multiqc.html",
-            caption="../report/multiqc.rst",
-            category="Quality Control",
-        ),
-        directory("qc/multiqc_data"),
-    params:
-        extra="--verbose",
-    log:
-        "logs/multiqc.log",
-    wrapper:
-        "v4.6.0/bio/multiqc"
+    rule multiqc:
+        input:
+            _mqc_fastqc,
+            _mqc_markdup,
+            expand("qc/samtools/{sample}.fixed.sorted.txt", sample=samples_list),
+            expand("qc/qualimap_ug/{sample}_report/qualimapReport.html", sample=samples_list),
+            _mqc_vcf_raw,
+            *_mqc_bcftools_per_chrom,
+            *_mqc_bcftools_genome,
+        output:
+            report(
+                "qc/multiqc.html",
+                caption="../report/multiqc.rst",
+                category="Quality Control",
+            ),
+            directory("qc/multiqc_data"),
+        params:
+            extra="--verbose",
+        log:
+            "logs/multiqc.log",
+        wrapper:
+            "v4.6.0/bio/multiqc"
 
+else:  # HaplotypeCaller
 
-use rule multiqc as multiqc_HC with:
-    input:
-        expand(
-            "qc/fastqc/{sample}_{unit}_R{read}.html",
-            sample=[s for s, u in sample_unit_pairs],
-            unit=[u for s, u in sample_unit_pairs],
-            read=[1, 2],
-        ),
-        expand(
-            "qc/markdup/{sample}_sorted_md_metrics.txt",
-            sample=samples_list,
-        ),
-        expand(
-            "qc/samtools/{sample}_md.txt",
-            sample=samples_list,
-        ),
-        expand(
-            "qc/qualimap_hc/{sample}_report/qualimapReport.html",
-            sample=samples_list,
-        ),
-        expand(
-            "qc/vcf_stats/{chrom}.raw.bcftools_stats.txt",
-            chrom=chromosomes,
-        ),
-        *_mqc_bcftools_per_chrom,
-        *_mqc_bcftools_genome,
-    output:
-        report(
-            "qc/multiqc.html",
-            caption="../report/multiqc.rst",
-            category="Quality Control",
-        ),
-        directory("qc/multiqc_data"),
+    rule multiqc:
+        input:
+            _mqc_fastqc,
+            _mqc_markdup,
+            expand("qc/samtools/{sample}_md.txt", sample=samples_list),
+            expand("qc/qualimap_hc/{sample}_report/qualimapReport.html", sample=samples_list),
+            _mqc_vcf_raw,
+            *_mqc_bcftools_per_chrom,
+            *_mqc_bcftools_genome,
+        output:
+            report(
+                "qc/multiqc.html",
+                caption="../report/multiqc.rst",
+                category="Quality Control",
+            ),
+            directory("qc/multiqc_data"),
+        params:
+            extra="--verbose",
+        log:
+            "logs/multiqc.log",
+        wrapper:
+            "v4.6.0/bio/multiqc"
