@@ -17,4 +17,5 @@ dedup/
 calls/
 logs/
 raw/
-qc/.worktrees/
+qc/
+.worktrees/
