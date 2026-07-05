@@ -90,6 +90,12 @@ vcf_output_mode = (
     else "both"
 )
 
+hc_scatter = (
+    config["chromosomes"].get("hc_scatter", True)
+    if isinstance(config["chromosomes"], dict)
+    else True
+)
+
 skip_filtering = config.get("filtering", {}).get("skip", False)
 
 
