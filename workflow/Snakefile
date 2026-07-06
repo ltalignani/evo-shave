@@ -105,21 +105,22 @@ else:
 
 if config["caller"] == "HaplotypeCaller":
 
+    if hc_scatter:
+        _hc_targets = expand(
+            "calls/{sample}.{chrom}.g.vcf.gz",
+            sample=samples.index,
+            chrom=chromosomes,
+        )
+    else:
+        _hc_targets = expand("calls/{sample}.g.vcf.gz", sample=samples.index)
+
     rule all:
         input:
             "logs/.directories_created",
             expand("qc/validatesam/{sample}_md.txt", sample=samples.index),
             "qc/multiqc.html",
             expand("merged/{sample}_merged.bam", sample=samples.index),
-            (
-                expand(
-                    "calls/{sample}.{chrom}.g.vcf.gz",
-                    sample=samples.index,
-                    chrom=chromosomes,
-                )
-                if config.get("enable_variant_calling", True)
-                else []
-            ),
+            _hc_targets if config.get("enable_variant_calling", True) else [],
             _vcf_outputs,
             _vcf_qc,
 
