@@ -9,10 +9,14 @@ rule genomics_db_import:
         runtime=10080,
         tmpdir=config["resources"]["tmpdir"],
     input:
-        gvcfs=lambda wildcards: expand(
-            "calls/{sample}.{chrom}.g.vcf.gz",
-            sample=samples.index,
-            chrom=[wildcards.chrom],
+        gvcfs=lambda wildcards: (
+            expand(
+                "calls/{sample}.{chrom}.g.vcf.gz",
+                sample=samples.index,
+                chrom=[wildcards.chrom],
+            )
+            if hc_scatter
+            else expand("calls/{sample}.g.vcf.gz", sample=samples.index)
         ),
     output:
         db=directory("calls/db.{chrom}"),
