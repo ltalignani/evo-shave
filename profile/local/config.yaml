@@ -15,6 +15,9 @@ set-resources:
   HaplotypeCaller:
     cpus_per_task: 4
     mem_mb: 8000
+  HaplotypeCaller_wholegenome:
+    cpus_per_task: 4
+    mem_mb: 16000
   genomics_db_import:
     cpus_per_task: 1
     mem_mb: 16000

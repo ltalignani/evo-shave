@@ -131,6 +131,11 @@ set-resources:
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)  # reduced from 32000; calibrate with monitor_memory.sh
     runtime: attempt * 30  # observed P95: 0.6 min × 1.5; most scaffolds complete in < 1 min
+  HaplotypeCaller_wholegenome:
+    slurm_partition: "long"
+    cpus_per_task: 4
+    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)  # uncalibrated: one job scans the whole genome per sample, not a single scaffold
+    runtime: attempt * 720  # uncalibrated starting point (12h); refine once real run times are observed
   unifiedgenotyper:
     slurm_partition: "long"
     cpus_per_task: 8
