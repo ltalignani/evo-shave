@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [V6.2026.07.05] - 2026-07-05
+
+### Added
+
+#### `config/config.yaml` — `chromosomes.hc_scatter` toggle
+
+```yaml
+chromosomes:
+  hc_scatter: true # true = one HaplotypeCaller job per sample per chrom (default, best for few large chromosomes)
+                    # false = one HaplotypeCaller job per sample across the whole genome (best for references with many small scaffolds, e.g. hundreds of contigs — avoids per-job scheduling/JVM overhead)
+```
+
+References with hundreds of small scaffolds (e.g. `GCA_018104305.1_AalbF3_genomic.fna`, 574 contigs) previously forced HaplotypeCaller to launch 574 jobs per sample, each completing in well under a minute of actual compute — job scheduling and JVM-startup overhead dominated total wall-clock time. Setting `hc_scatter: false` runs HaplotypeCaller once per sample across the whole genome instead, trading away per-contig parallelism for drastically reduced overhead on such references.
+
+#### `workflow/rules/common.smk` — `hc_scatter` flag
+
+`hc_scatter = config["chromosomes"].get("hc_scatter", True)` is resolved once at parse time, following the same pattern as `vcf_output_mode` and `skip_filtering`.
+
+#### `workflow/rules/hc.smk` — `HaplotypeCaller_wholegenome` rule
+
+New rule active when `hc_scatter: false`, wildcarded only by `{sample}` (no `{chrom}`), with no `-L` interval restriction. Produces `calls/{sample}.g.vcf.gz` instead of one `calls/{sample}.{chrom}.g.vcf.gz` per chromosome.
+
+#### `workflow/rules/genomicsdb.smk` and `workflow/Snakefile` — whole-genome wiring
+
+`genomics_db_import`'s input and `rule all`'s HaplotypeCaller targets both branch on `hc_scatter`. In whole-genome mode, `GenomicsDBImport` still runs once per chromosome and imports from the same whole-genome GVCF per sample; its existing `--intervals {chrom}` subsets via the GVCF's tabix index exactly as before.
+
+#### `profile/local/config.yaml` and `profile/cluster/config.yaml` — resource profile for the new rule
+
+`HaplotypeCaller_wholegenome` gets its own resource entries, sized independently from the existing per-scaffold `HaplotypeCaller` entry (uncalibrated starting point: 16GB / 12h per sample on the cluster profile, to be refined from observed run times).
+
+---
+
 ## [V5.2026.06.14] - 2026-06-14
 
 ### Added
