@@ -33,7 +33,7 @@ if vcf_output_mode != "per_contig" or skip_filtering:
         log:
             "logs/vcf_stats/concat_vcf.log",
         conda:
-            "../envs/bcftools-minimal.yaml"
+            "../envs/bcftools-1.15.1.yaml"
         shell:
             """
             bcftools concat --threads {resources.cpus_per_task} -a -D \
