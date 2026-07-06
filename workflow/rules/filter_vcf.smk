@@ -3,11 +3,8 @@ reference_file = config["refs"]["reference"]
 if not skip_filtering:
 
     def get_raw_vcf(wildcards):
-        """Return raw (pre-filter) per-chromosome VCF depending on caller."""
-        if config["caller"] == "HaplotypeCaller":
-            return f"calls/all.{wildcards.chrom}.vcf.gz"
-        else:
-            return f"calls/variants.{wildcards.chrom}.vcf.gz"
+        """Return raw (pre-filter) per-chromosome VCF."""
+        return f"calls/all.{wildcards.chrom}.vcf.gz"
 
     def get_mem_mb(wildcards, attempt):
         return attempt * 8000

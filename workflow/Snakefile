@@ -20,9 +20,6 @@ from snakemake.utils import min_version
 
 min_version("9.0.0")
 
-caller = config["caller"]
-
-
 ###############################################################################
 # INCLUSION DES MODULES #
 include: "rules/create_directories.smk"
@@ -33,17 +30,11 @@ include: "rules/trim.smk"
 include: "rules/bwa.smk"
 include: "rules/merge_bams.smk"
 include: "rules/markduplicates.smk"
-include: "rules/setnmtag.smk"
 include: "rules/samtools_index.smk"
-include: "rules/rtc.smk"
-include: "rules/indlr.smk"
-include: "rules/fixmateinformation.smk"
 include: "rules/qualimap.smk"
-include: "rules/awkforigv.smk"
 include: "rules/samtools_stats.smk"
 include: "rules/validatesam.smk"
 include: "rules/multiqc.smk"
-include: "rules/ug.smk"
 include: "rules/hc.smk"
 include: "rules/genomicsdb.smk"
 include: "rules/gtgvcfs.smk"
@@ -55,8 +46,6 @@ include: "rules/vcf_stats.smk"
 ################################## A L L #######################################
 localrules:
     create_directories,
-    create_bed_file_for_igv,
-    create_bam_list,
     all_bams_ready,
 
 
@@ -90,42 +79,21 @@ else:
     _vcf_qc = []
 
 
-if config["caller"] == "HaplotypeCaller":
-
-    if hc_scatter:
-        _hc_targets = expand(
-            "calls/{sample}.{chrom}.g.vcf.gz",
-            sample=samples.index,
-            chrom=chromosomes,
-        )
-    else:
-        _hc_targets = expand("calls/{sample}.g.vcf.gz", sample=samples.index)
-
-    rule all:
-        input:
-            "logs/.directories_created",
-            expand("qc/validatesam/{sample}_md.txt", sample=samples.index),
-            "qc/multiqc.html",
-            expand("merged/{sample}_merged.bam", sample=samples.index),
-            _hc_targets if config.get("enable_variant_calling", True) else [],
-            _vcf_outputs,
-            _vcf_qc,
-
-elif config["caller"] == "UnifiedGenotyper":
-
-    rule all:
-        input:
-            expand("qc/validatesam/{sample}.fixed.sorted.txt", sample=samples.index),
-            expand("dedup/{sample}_realignertargetcreator.bed", sample=samples.index),
-            "qc/multiqc.html",
-            expand("merged/{sample}_merged.bam", sample=samples.index),
-            (
-                expand("calls/variants.{chrom}.vcf.gz", chrom=chromosomes)
-                if config.get("enable_variant_calling", True)
-                else []
-            ),
-            _vcf_outputs,
-            _vcf_qc,
-
+if hc_scatter:
+    _hc_targets = expand(
+        "calls/{sample}.{chrom}.g.vcf.gz",
+        sample=samples.index,
+        chrom=chromosomes,
+    )
 else:
-    raise ValueError("Unsupported caller specified in config file.")
+    _hc_targets = expand("calls/{sample}.g.vcf.gz", sample=samples.index)
+
+rule all:
+    input:
+        "logs/.directories_created",
+        expand("qc/validatesam/{sample}_md.txt", sample=samples.index),
+        "qc/multiqc.html",
+        expand("merged/{sample}_merged.bam", sample=samples.index),
+        _hc_targets if config.get("enable_variant_calling", True) else [],
+        _vcf_outputs,
+        _vcf_qc,

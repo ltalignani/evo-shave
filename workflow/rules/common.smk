@@ -106,10 +106,7 @@ def get_final_vcf(wildcards):
     caller output. When False, points to the hard-filtered merged VCF.
     """
     if skip_filtering:
-        if config["caller"] == "HaplotypeCaller":
-            return f"calls/all.{wildcards.chrom}.vcf.gz"
-        else:
-            return f"calls/variants.{wildcards.chrom}.vcf.gz"
+        return f"calls/all.{wildcards.chrom}.vcf.gz"
     return f"calls/all.{wildcards.chrom}.filtered.vcf.gz"
 
 

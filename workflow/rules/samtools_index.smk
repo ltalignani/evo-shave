@@ -17,14 +17,3 @@ rule samtools_index:
     threads: 4  # This value - 1 will be sent to -@
     wrapper:
         "v4.5.0/bio/samtools/index"
-
-
-use rule samtools_index as SetNmMdAndUqTags_index with:
-    input:
-        rules.SetNmMdAndUqTags.output.bam,
-    output:
-        "dedup/{sample}_tagged.bai",
-    log:
-        "logs/samtools_index/{sample}_tagged_bai.log",
-    params:
-        extra="",

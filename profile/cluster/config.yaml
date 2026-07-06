@@ -51,66 +51,16 @@ set-resources:
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
     runtime: max((input.size_mb / 1024) * 8 * attempt, 15)  # observed P95: 0.7 min × 1.5
-  SetNmMdAndUqTags:
-    slurm_partition: "fast"
-    cpus_per_task: 1
-    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
-    runtime: max((input.size_mb / 1024) * 6 * attempt, 240)
-  SetNmMdAndUqTags_index:
-    slurm_partition: "fast"
-    cpus_per_task: 4
-    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
-    runtime: max((input.size_mb / 1024) * 6 * attempt, 120)
-  realignertargetcreator:
-    slurm_partition: "fast"
-    cpus_per_task: 8
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: max((input.size_mb / 1024) * 12 * attempt, 240)
-  indelrealigner:
-    slurm_partition: "long"
-    cpus_per_task: 1
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: max((input.size_mb / 1024) * 60 * attempt, 120)
-  sort_by_queryname:
-    slurm_partition: "fast"
-    cpus_per_task: 4
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: max((input.size_mb / 1024) * 18 * attempt, 40)
-  picard_fixmate:
-    slurm_partition: "fast"
-    cpus_per_task: 4
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: attempt * 120
-  sort_by_coordinate:
-    slurm_partition: "fast"
-    cpus_per_task: 4
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: attempt * 180
-  validatesam:
-    slurm_partition: "fast"
-    cpus_per_task: 1
-    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
-    runtime: max((input.size_mb / 1024) * 18 * attempt, 60)
   validatesam_HC:
     slurm_partition: "fast"
     cpus_per_task: 2
     mem_mb: max((1.5 * input.size_mb) * attempt, 4000)  # reduced from 16000; calibrate with monitor_memory.sh
     runtime: max((input.size_mb / 1024) * 18 * attempt, 15)  # observed P95: 1.2 min × 1.5
-  samtools_stats:
-    slurm_partition: "fast"
-    cpus_per_task: 4
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: attempt * 120
   samtools_stats_HC:
     slurm_partition: "fast"
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: attempt * 20  # observed P95: 1.9 min × 1.5
-  qualimap_ug:
-    slurm_partition: "fast"
-    cpus_per_task: 8
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: attempt * 720
   qualimap_hc:
     slurm_partition: "fast"
     cpus_per_task: 8
@@ -136,16 +86,6 @@ set-resources:
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 16000)  # uncalibrated: one job scans the whole genome per sample, not a single scaffold
     runtime: attempt * 720  # uncalibrated starting point (12h); refine once real run times are observed
-  unifiedgenotyper:
-    slurm_partition: "long"
-    cpus_per_task: 8
-    mem_mb: max((1.5 * input.size_mb) * attempt, 32000)
-    runtime: attempt * 10080
-  bgzip:
-    slurm_partition: "fast"
-    cpus_per_task: 8
-    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
-    runtime: attempt * 120
   combine_gvcfs:
     slurm_partition: "fast"
     cpus_per_task: 10

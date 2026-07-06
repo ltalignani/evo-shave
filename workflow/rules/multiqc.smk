@@ -8,46 +8,22 @@ _mqc_fastqc = [
 ]
 _mqc_markdup = expand("qc/markdup/{sample}_sorted_md_metrics.txt", sample=samples_list)
 
-if config["caller"] == "UnifiedGenotyper":
-
-    rule multiqc:
-        input:
-            _mqc_fastqc,
-            _mqc_markdup,
-            expand("qc/samtools/{sample}.fixed.sorted.txt", sample=samples_list),
-            expand("qc/qualimap_ug/{sample}_report/qualimapReport.html", sample=samples_list),
-        output:
-            report(
-                "qc/multiqc.html",
-                caption="../report/multiqc.rst",
-                category="Quality Control",
-            ),
-            directory("qc/multiqc_data"),
-        params:
-            extra="--verbose",
-        log:
-            "logs/multiqc.log",
-        wrapper:
-            "v4.6.0/bio/multiqc"
-
-else:  # HaplotypeCaller
-
-    rule multiqc:
-        input:
-            _mqc_fastqc,
-            _mqc_markdup,
-            expand("qc/samtools/{sample}_md.txt", sample=samples_list),
-            expand("qc/qualimap_hc/{sample}_report/qualimapReport.html", sample=samples_list),
-        output:
-            report(
-                "qc/multiqc.html",
-                caption="../report/multiqc.rst",
-                category="Quality Control",
-            ),
-            directory("qc/multiqc_data"),
-        params:
-            extra="--verbose",
-        log:
-            "logs/multiqc.log",
-        wrapper:
-            "v4.6.0/bio/multiqc"
+rule multiqc:
+    input:
+        _mqc_fastqc,
+        _mqc_markdup,
+        expand("qc/samtools/{sample}_md.txt", sample=samples_list),
+        expand("qc/qualimap_hc/{sample}_report/qualimapReport.html", sample=samples_list),
+    output:
+        report(
+            "qc/multiqc.html",
+            caption="../report/multiqc.rst",
+            category="Quality Control",
+        ),
+        directory("qc/multiqc_data"),
+    params:
+        extra="--verbose",
+    log:
+        "logs/multiqc.log",
+    wrapper:
+        "v4.6.0/bio/multiqc"
