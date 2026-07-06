@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [V7.2026.07.06] - 2026-07-06
+
+### Removed
+
+#### `workflow/rules/report_vcf.smk`, `workflow/rules/bcftools_stats.smk` — VCF report and bcftools stats
+
+Removed the R/Rmd-based VCF HTML report (`report_vcf`) and all `bcftools_stats_*`/`bcftools_concat` rules. `multiqc` and `vcf_stats` (vcftools-based per-chrom stats) are unaffected and continue to run. Orphaned files removed alongside: `workflow/envs/bcftools-1.15.1.yaml` (+ pin), `workflow/envs/r.yaml` (+ pins), `workflow/scripts/report_vcf.Rmd`, `workflow/report/report_vcf.rst`.
+
+#### `workflow/rules/ug.smk`, `workflow/rules/rtc.smk`, `workflow/rules/indlr.smk`, `workflow/rules/fixmateinformation.smk`, `workflow/rules/awkforigv.smk`, `workflow/rules/setnmtag.smk` — UnifiedGenotyper/GATK3/indel-realignment path
+
+The legacy UnifiedGenotyper (GATK3) caller and its indel-realignment chain (RealignerTargetCreator, IndelRealigner, the fixmate/sort chain, SetNmMdAndUqTags, the IGV bed-file generator) are removed — HaplotypeCaller is now the pipeline's only caller. `samtools_stats_HC` and `validatesam_HC` were converted from `use rule ... with:` inheritance to standalone rules since their UnifiedGenotyper-only base rules (`samtools_stats`, `validatesam`) no longer exist. `qualimap_ug` is removed; `qualimap_hc` is unaffected. The orphaned `workflow/envs/gatk3.yaml` (+ pins) is removed. `workflow/Snakefile`'s `rule all` and `workflow/rules/multiqc.smk`'s `rule multiqc` are collapsed from a dual-caller branch to a single unconditional body. `config/config.yaml`'s `caller:` key is left in place (unused) but no code reads it any more.
+
+---
+
 ## [V6.2026.07.05] - 2026-07-05
 
 ### Added
