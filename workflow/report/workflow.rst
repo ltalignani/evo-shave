@@ -3,7 +3,7 @@ SHAVE Pipeline Run Report
 
 **Pipeline:** SHAVE — SHort-read Alignment pipeline for VEctors
 
-**Caller:** {{ snakemake.config["caller"] }}
+**Caller:** HaplotypeCaller
 
 **Reference genome:** {{ snakemake.config["refs"]["reference"] }}
 
@@ -17,8 +17,7 @@ SHAVE Pipeline Run Report
 
 This report was generated automatically by SHAVE after pipeline completion.
 It includes alignment quality control (Qualimap), a consolidated QC summary
-(MultiQC), genome-wide variant call statistics (bcftools), and per-chromosome
-variant reports.
+(MultiQC), and per-chromosome variant statistics (vcftools).
 
 Navigate between sections using the tabs above. The **Rules** tab shows the
 complete workflow graph and per-rule runtime statistics. The **Statistics** tab
@@ -30,4 +29,3 @@ summarises job execution times and resource usage.
 .. _Samtools: http://www.htslib.org/
 .. _FastQC: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 .. _Qualimap: http://qualimap.conesalab.org/
-.. _bcftools: https://samtools.github.io/bcftools/

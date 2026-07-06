@@ -8,10 +8,7 @@ def get_mem_mb(wildcards, attempt):
 if vcf_output_mode != "per_contig" or skip_filtering:
 
     if skip_filtering:
-        if config["caller"] == "HaplotypeCaller":
-            _concat_input = expand("calls/all.{chrom}.vcf.gz", chrom=chromosomes)
-        else:
-            _concat_input = expand("calls/variants.{chrom}.vcf.gz", chrom=chromosomes)
+        _concat_input = expand("calls/all.{chrom}.vcf.gz", chrom=chromosomes)
     else:
         _concat_input = expand("calls/all.{chrom}.filtered.vcf.gz", chrom=chromosomes)
     _concat_output = (
