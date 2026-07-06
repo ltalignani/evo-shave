@@ -196,11 +196,11 @@ set-resources:
     cpus_per_task: 1
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: max((input.size_mb / 50) * attempt, 30)
-  report_vcf:
+  concat_vcf:
     slurm_partition: "fast"
-    cpus_per_task: 1
-    mem_mb: max((1.5 * input.size_mb) * attempt, 4000)
-    runtime: attempt * 60
+    cpus_per_task: 4
+    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    runtime: 120
   vcf_stats:
     slurm_partition: "fast"
     cpus_per_task: 1
