@@ -128,7 +128,7 @@ Place paired-end reads in the `raw/` directory. Accepted filename formats:
 {sample}_R{1|2}.fq.gz               # extension normalised
 ```
 
-`Start_shave.sh` renames files automatically to `{sample}_L{n}_R{1|2}.fastq.gz` before running.
+`run_shave.sh` renames files automatically to `{sample}_L{n}_R{1|2}.fastq.gz` before running.
 
 ### 2. Edit the sample tables
 
