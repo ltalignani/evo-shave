@@ -22,7 +22,7 @@ SHAVE runs on a **local workstation** or on a **SLURM cluster**, with fully auto
 ### Variant calling
 
 - **GATK4 HaplotypeCaller** — per-sample GVCF → GenomicsDBImport → joint GenotypeGVCFs
-- **GATK3 UnifiedGenotyper** — multi-sample calling with indel realignment, matching MalariaGEN phase 2/3 parameters
+- **Scatter mode** (`chromosomes.hc_scatter`) — one HaplotypeCaller job per sample per chromosome (default, best for a few large chromosomes) or one job per sample across the whole genome (best for references with hundreds of small scaffolds, avoiding per-job scheduling overhead)
 - **Hard filtering** (GATK VariantFiltration) — SNV and indel filters configured in `config.yaml`; no truth set required
 - **VCF output modes** — per-chromosome, genome-wide merged, or both
 
@@ -48,8 +48,7 @@ SHAVE runs on a **local workstation** or on a **SLURM cluster**, with fully auto
 - FastQC on raw reads
 - Samtools stats on deduplicated BAMs
 - Qualimap coverage reports
-- bcftools stats on raw and filtered VCFs (per-chromosome + genome-wide)
-- VCFtools frequency and statistics
+- VCFtools frequency, depth, and quality statistics per chromosome
 - MultiQC HTML report aggregating all QC metrics
 
 ### SLURM cluster
@@ -59,7 +58,6 @@ SHAVE runs on a **local workstation** or on a **SLURM cluster**, with fully auto
 - Rule-level priority (`bwa_mem: 85`, `trimmomatic: 80`, etc.)
 - Up to 500 concurrent SLURM jobs; configurable per-rule partition, CPU, memory, and runtime
 - Automatic results archiving (`transfer_results.sh`)
-- Post-run SLURM efficiency analysis (`analyze_efficiency.py`)
 
 ### Why no BQSR or VQSR?
 
@@ -97,8 +95,8 @@ DRY_RUN=true bash run_shave.sh
 ## Installation
 
 ```bash
-git clone https://github.com/ltalignani/shave.git
-cd shave/
+git clone https://github.com/ltalignani/evo-shave.git
+cd evo-shave/
 
 # Create the Python virtual environment with pinned dependencies
 python3 -m venv .env
@@ -157,9 +155,6 @@ Edit `config/config.yaml`. Key settings:
 refs:
   reference: "resources/genomes/AalbF5.fasta"
 
-# Variant caller: "HaplotypeCaller" or "UnifiedGenotyper"
-caller: "HaplotypeCaller"
-
 # ddRAD-seq: skip MarkDuplicates and hard filtering
 markdup:
   skip: false   # true for ddRAD-seq
@@ -173,6 +168,8 @@ chromosomes:
   min_size: 0         # filter scaffolds below N bp
   pattern: ""         # regex filter on contig names (e.g. "^NC_")
   vcf_output: "both"  # "per_contig" | "merged" | "both"
+  hc_scatter: true    # true = one HaplotypeCaller job per sample per chrom
+                       # false = one HaplotypeCaller job per sample, whole genome
 ```
 
 When `filtering.skip: true`, all GATK VariantFiltration rules are removed from the DAG. VCF stats, genome-wide concatenation, and MultiQC all remain active and operate on the raw VCFs (`calls/all.raw.vcf.gz`).
@@ -211,7 +208,7 @@ set-resources:
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
     runtime: attempt * 30
   bwa_mem:
-    mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
+    mem_mb: max((1.5 * input.size_mb) * attempt, 20000)
     runtime: max((input.size_mb / 1024) * 36 * attempt, 30)
 ```
 
@@ -219,7 +216,7 @@ When a job fails, `attempt` increments (1→2→3…) up to 5 retries, proportio
 
 ### BAM-first scheduling
 
-A barrier rule (`all_bams_ready`) prevents HaplotypeCaller and UnifiedGenotyper jobs from being submitted before all deduplicated BAMs exist. This avoids flooding the SLURM `long` partition queue — and depleting FairShare — while `fast` partition BAM jobs are still running.
+A barrier rule (`all_bams_ready`) prevents HaplotypeCaller jobs from being submitted before all deduplicated BAMs exist. This avoids flooding the SLURM `long` partition queue — and depleting FairShare — while `fast` partition BAM jobs are still running.
 
 ### Cluster module requirements
 
@@ -233,25 +230,6 @@ module load conda
 ---
 
 ## Post-run tools
-
-### SLURM efficiency analysis
-
-After the pipeline completes, analyse CPU and memory efficiency per rule and generate an optimised `profile/config_optimized.yaml`:
-
-```bash
-bash analyze_efficiency.sh Cluster_logs/evoshave-*.out
-diff profile/config.yaml profile/config_optimized.yaml
-```
-
-Options: `--mem-margin 1.3`, `--time-margin 1.5`, `--n-outliers 5`.
-
-### Live memory monitoring
-
-Run alongside the pipeline to capture peak `MaxRSS` per rule (required because this cluster does not populate `MaxRSS` in `sacct`):
-
-```bash
-bash monitor_memory.sh --interval 60 --output memory_log.tsv
-```
 
 ### Results archiving
 
@@ -282,7 +260,7 @@ transfer:
 | `qc/samtools/` | samtools stats per BAM |
 | `qc/qualimap_hc/` | Qualimap coverage reports |
 | `qc/validatesam/` | Picard ValidateSamFile reports |
-| `qc/vcf_stats/` | bcftools stats and VCFtools frequency files |
+| `qc/vcf_stats/` | VCFtools frequency, depth, and quality files |
 | `qc/multiqc.html` | Aggregated MultiQC report |
 
 ### Alignments
@@ -316,15 +294,15 @@ FastQC → Trimmomatic → BWA-MEM → merge_bams → MarkDuplicates
                                                       ↓
                                            [all_bams_ready barrier]
                                                       ↓
-                           ┌──── HaplotypeCaller (per sample × chromosome)
-                           │           ↓
-                           │     GenomicsDBImport
-                           │           ↓
-                           │     GenotypeGVCFs ────────────────┐
-                           │                                    ↓
-                           └──── UnifiedGenotyper     VariantFiltration
-                                                               ↓
-                                              bcftools stats + VCFtools + MultiQC
+                              HaplotypeCaller (per sample × chromosome, or whole-genome)
+                                                      ↓
+                                              GenomicsDBImport
+                                                      ↓
+                                              GenotypeGVCFs
+                                                      ↓
+                                        VariantFiltration (unless filtering.skip)
+                                                      ↓
+                                    concat_vcf (genome-wide merge) + VCFtools + MultiQC
 ```
 
 ---
@@ -346,20 +324,20 @@ FastQC → Trimmomatic → BWA-MEM → merge_bams → MarkDuplicates
 
 Configured under `filtering.hard` in `config/config.yaml`. Separate thresholds for SNVs and indels. Applied by GATK VariantFiltration; variants failing any filter are tagged `FILTER` (not removed).
 
-Set `filtering.skip: true` to bypass all filtering steps. All QC rules (bcftools stats, VCFtools, MultiQC) remain active and operate on the raw VCFs. Recommended for ddRAD-seq, where WGS-calibrated thresholds are biologically inappropriate.
+Set `filtering.skip: true` to bypass all filtering steps. All QC rules (VCFtools, MultiQC) remain active and operate on the raw VCFs. Recommended for ddRAD-seq, where WGS-calibrated thresholds are biologically inappropriate.
 
 ---
 
 ## Support
 
-- Open an [issue on GitHub](https://github.com/ltalignani/shave/issues)
+- Open an [issue on GitHub](https://github.com/ltalignani/evo-shave/issues)
 - Email: [loic.talignani@ird.fr](mailto:loic.talignani@ird.fr)
 
 ---
 
 ## Version
 
-**V5.2026.06.14** — see [CHANGELOG.md](CHANGELOG.md) for full history.
+**V7.2026.07.06** — see [CHANGELOG.md](CHANGELOG.md) for full history.
 
 ---
 
