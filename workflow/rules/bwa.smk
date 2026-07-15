@@ -16,6 +16,7 @@ rule bwa_mem:
         partition="fast",
         cpus_per_task=16,
         mem_mb=lambda wildcards, attempt: get_mem_mb(wildcards, attempt),
+        java_mem_overhead_mb=4000,  # reserved for bwa mem's own footprint + JVM off-heap; both run concurrently in the same cgroup allocation
         runtime=360,
     input:
         reads=[
@@ -48,7 +49,7 @@ rule bwa_mem:
         """
         (bwa mem {params.msp} {params.out_al} -t {resources.cpus_per_task} {params.extra} \
             {input.ref} \
-            {input.reads} | picard SortSam -Xmx{resources.mem_mb}M \
+            {input.reads} | picard SortSam -Xmx$(( {resources.mem_mb} - {resources.java_mem_overhead_mb} ))M \
             -Djava.io.tmpdir=tmp \
             --INPUT /dev/stdin \
             --TMP_DIR tmp \
