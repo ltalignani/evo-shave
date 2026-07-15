@@ -211,17 +211,13 @@ for file in "$input_directory"/*.fq.gz "$input_directory"/*.fastq.gz; do
 done
 
 # ── Create directories ─────────────────────────────────────────────────────────
-echo ""
-echo "------------------------------------------------------------------------"
-echo "CREATE DIRECTORIES"
-echo "------------------------------------------------------------------------"
-echo ""
-
-mkdir -p trimmed/ mapped/ dedup/ calls/ fixed/ graphs/ Cluster_logs/ tmp/ \
-    logs/{awk,bwa_mem,bgzip,gatk3/{indelrealigner,realignertargetcreator,unifiedgenotyper},gatk4/{genomicsdbimport,haplotypecaller},fastqc,fastq-screen,picard,samtools_{index,stats},setnm,trimmomatic,md,qualimap/bamqc,validatesam,vcf_stats} \
-    qc/{fastqc,fastq-screen,markdup,qualimap_ug,qualimap_hc,multiqc_data,samtools,validatesam,vcf_stats}
-
-touch logs/.directories_created
+# Only Cluster_logs/ is created here — it must exist before Snakemake starts,
+# since SLURM writes %x-%j-%N.out/.err there from job submission onward.
+# Every other directory is created by the Snakemake `create_directories` rule
+# (workflow/rules/create_directories.smk), which is prioritized to run first
+# (--prioritize create_directories, below). Keeping directory lists in one
+# place (the rule) avoids the two copies drifting apart.
+mkdir -p Cluster_logs/
 
 # ── Unlock if needed ───────────────────────────────────────────────────────────
 if [ -n "$(ls "${workdir}/.snakemake/locks/" 2>/dev/null)" ]; then
