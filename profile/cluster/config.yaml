@@ -34,7 +34,7 @@ set-resources:
   bwa_mem:
     slurm_partition: "fast"
     cpus_per_task: 16
-    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)
+    mem_mb: max((1.5 * input.size_mb) * attempt, 20000)  # raised from 16000: sacct showed MaxRSS ~15.8G against a 16G ceiling (job 587529, OUT_OF_MEMORY) — the old floor left ~0 headroom even before reserving java_mem_overhead_mb
     runtime: max((input.size_mb / 1024) * 36 * attempt, 30)  # observed P95: 1.7 min × 1.5
   merge_bams:
     slurm_partition: "fast"
