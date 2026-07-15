@@ -43,7 +43,7 @@ New rule active when `hc_scatter: false`, wildcarded only by `{sample}` (no `{ch
 
 #### `workflow/rules/genomicsdb.smk` and `workflow/Snakefile` — whole-genome wiring
 
-`genomics_db_import`'s input and `rule all`'s HaplotypeCaller targets both branch on `hc_scatter`. In whole-genome mode, `GenomicsDBImport` still runs once per chromosome and imports from the same whole-genome GVCF per sample; its existing `--intervals {chrom}` subsets via the GVCF's tabix index exactly as before.
+`genomics_db_import`'s input and `rule all`'s HaplotypeCaller targets both branch on `hc_scatter`. In whole-genome mode, `GenomicsDBImport` still runs once per chromosome and imports from the same whole-genome GVCF per sample; its existing `--intervals {chrom}` subsets via the GVCF's tabix index exactly a s before.
 
 #### `profile/local/config.yaml` and `profile/cluster/config.yaml` — resource profile for the new rule
 

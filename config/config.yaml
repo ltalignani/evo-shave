@@ -74,7 +74,7 @@ chromosomes:
     - "NC_085137.1"
     - "NC_085138.1"
     - "NC_006817.1"
-  vcf_output: "both" # "per_contig" | "merged" | "both"
+  vcf_output: "merged" # "per_contig" | "merged" | "both"
   hc_scatter: true # true = one HaplotypeCaller job per sample per chrom (default, best for few large chromosomes)
                     # false = one HaplotypeCaller job per sample across the whole genome (best for references with many small scaffolds, e.g. hundreds of contigs — avoids per-job scheduling/JVM overhead)
 
