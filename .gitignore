@@ -2,6 +2,7 @@
 .claude
 .env/
 .DS_Store
+docs/superpowers/
 resources/genomes/
 resources/indexes/
 Cluster_logs/
