@@ -32,7 +32,7 @@ SHAVE runs on a **local workstation** or on a **SLURM cluster**, with fully auto
 - **ddRAD-seq** — MarkDuplicates bypass (`markdup.skip: true`) and hard-filtering bypass (`filtering.skip: true`) to avoid systematic artifacts from enzymatic digestion
 - **Multi-lane samples** — BAMs from multiple sequencing lanes are automatically merged per sample before downstream processing
 
-### Reference genomes
+### Tested Reference genomes
 
 - *Aedes albopictus* AalbF5
 - *Aedes albopictus* AalbF3
@@ -226,6 +226,34 @@ A barrier rule (`all_bams_ready`) prevents HaplotypeCaller jobs from being submi
 module load snakemake/9.4.0
 module load conda
 ```
+
+---
+
+## Conda environment maintenance
+
+Each `workflow/envs/*.yaml` has a matching platform-specific pin file (`*.linux-64.pin.txt`, `*.osx-64.pin.txt`) — an exact, hash-locked package list Snakemake tries first for reproducible, fast environment creation. These pins can go stale over time as conda-forge/bioconda purge old package builds, causing errors like:
+
+```
+Failed to install conda environment from pin file (.../envs/qualimap.linux-64.pin.txt).
+Trying regular environment definition file.
+```
+
+This isn't fatal — Snakemake automatically falls back to resolving the plain `.yaml` — but the resolution can then drift to a heavier/different dependency set than what was validated, so pins should be refreshed periodically rather than left to fail silently.
+
+`snakedeploy` isn't provided as a cluster module; create a dedicated conda env for it once:
+
+```bash
+conda create -n snkdp -c bioconda -c conda-forge snakedeploy
+```
+
+Then, **from the platform you want to pin for** (e.g. run this on the cluster for `linux-64` pins, not from a Mac), refresh all environments in one pass:
+
+```bash
+conda activate snkdp
+snakedeploy update-conda-envs workflow/envs/*.yaml --pin-envs
+```
+
+Commit the updated `.pin.txt` files. Re-run `snakemake --conda-create-envs-only` (or set `CREATE_ENVS=true` in `run_shave.sh`) afterwards to verify the refreshed pins actually install cleanly.
 
 ---
 
