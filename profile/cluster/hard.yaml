@@ -111,10 +111,15 @@ set-resources:
     cpus_per_task: 6
     mem_mb: attempt * 24000
     runtime: attempt * 14400
+  export_gendb_gvcf:
+    slurm_partition: "long"
+    cpus_per_task: 2
+    mem_mb: attempt * 32000
+    runtime: attempt * 2160
   genotype_gvcfs:
     slurm_partition: "long"
     cpus_per_task: 6
-    mem_mb: attempt * 128000
+    mem_mb: attempt * 32000
     runtime: attempt * 2880
 #config:
 #  my_parameter_list:

@@ -151,11 +151,16 @@ set-resources:
     cpus_per_task: 1
     mem_mb: max((1.5 * input.size_mb) * attempt, 32000)  # restored: 95 samples requires ~32 GB
     runtime: attempt * 720  # reduced from 14400; increase if timeouts occur
+  export_gendb_gvcf:
+    slurm_partition: "long"
+    cpus_per_task: 2
+    mem_mb: max((1.5 * input.size_mb) * attempt, 32000)  # GenomicsDB reader streams the whole chrom; 32 Go floor
+    runtime: attempt * 2160  # GenomicsDB read rate ~20-30 Mb/min on big chroms; not yet observed — increase if timeouts occur
   genotype_gvcfs:
     slurm_partition: "long"
     cpus_per_task: 6
-    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)  # reduced from 128000; calibrate with monitor_memory.sh
-    runtime: attempt * 360  # reduced from 2880; not yet observed — increase if timeouts occur
+    mem_mb: max((1.5 * input.size_mb) * attempt, 16000)  # reads an exported GVCF file, not gendb:// (see gatk#8989 leak)
+    runtime: attempt * 1440  # not yet observed — increase if timeouts occur
   select_snvs:
     slurm_partition: "fast"
     cpus_per_task: 1
