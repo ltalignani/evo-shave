@@ -11,7 +11,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 #### `workflow/rules/gtgvcfs.smk` — `export_gendb_gvcf` rule (GenomicsDB GVCF export workaround)
 
-GATK's GenomicsDB 1.3+ reader leaks memory unboundedly when `GenotypeGVCFs` reads `gendb://` directly (~2 GB per Mb, heap flat, OOM-killed regardless of `-Xmx`) — [broadinstitute/gatk#8989](https://github.com/broadinstitute/gatk/issues/8989). New rule `export_gendb_gvcf` exports the combined GVCF per chromosome from the GenomicsDB via `SelectVariants -V gendb://calls/db.<chrom> -L <chrom>` into a temporary file (`temp:calls/all.<chrom>.gendb.g.vcf.gz`), and `genotype_gvcfs` now reads that exported file instead of `gendb://`. The leak stays in the export step (bounded per chromosome); `GenotypeGVCFs` only does genotyping.
+GATK's GenomicsDB 1.3+ reader leaks memory unboundedly when `GenotypeGVCFs` reads `gendb://` directly (~2 GB per Mb, heap flat, OOM-killed regardless of `-Xmx`) — [broadinstitute/gatk#8989](https://github.com/broadinstitute/gatk/issues/8989). New rule `export_gendb_gvcf` exports the combined GVCF per chromosome from the GenomicsDB via `SelectVariants -V gendb://calls/db.<chrom> -L <chrom>` into a temporary file (`temp:calls/all.<chrom>.gendb.g.vcf.gz`), and `genotype_gvcfs` now reads that exported file instead of `gendb://`. The leak-prone operation — `GenotypeGVCFs` reading `gendb://` directly — is eliminated: the `SelectVariants` export is bounded per chromosome, and `GenotypeGVCFs` now only genotypes from the exported file.
 
 ### Changed
 
@@ -21,7 +21,7 @@ Input `gvcf` switched from `gendb://calls/db.<chrom>` to the GVCF exported by `e
 
 #### Resource profiles — `export_gendb_gvcf` added, `genotype_gvcfs` recalibrated
 
-`profile/cluster/config.yaml`, `profile/local/config.yaml`, `profile/config.yaml`, `profile/hard.yaml`, `profile/cluster/hard.yaml` gain an `export_gendb_gvcf` entry (32 GB floor: the GenomicsDB reader streams the whole chromosome). `genotype_gvcfs` memory is reduced (128000 → 32000 in the `hard` profiles; 16000 floor elsewhere) and runtimes recalibrated (`runtime: attempt * 1440` in the SLURM profiles). `profile/cluster/config.yaml` also carries accompanying cluster calibrations observed from `sacct`/run data: `bwa_mem` moved to the `long` partition, `qualimap_hc` to `long` with `3 * input.size_mb` memory and `attempt * 7600` runtime, `samtools_stats_HC` runtime ×3, `HaplotypeCaller_wholegenome` runtime ×4, `concat_vcf` runtime 600, and `vcf_stats` moved to `long` with `attempt * 1440` runtime (the `fast` partition's 24 h MaxTime rejects `attempt >= 2`).
+`profile/cluster/config.yaml`, `profile/local/config.yaml`, `profile/config.yaml`, `profile/hard.yaml`, `profile/cluster/hard.yaml` gain an `export_gendb_gvcf` entry (32 GB floor: the GenomicsDB reader streams the whole chromosome). `genotype_gvcfs` memory is reduced (128000 → 32000 in the `hard` profiles; 16000 floor elsewhere) and runtimes recalibrated (`runtime: attempt * 1440` in `profile/cluster/config.yaml` and `profile/config.yaml`; the `hard` profiles keep `attempt * 2880`). `profile/cluster/config.yaml` also carries accompanying cluster calibrations observed from `sacct`/run data: `bwa_mem` moved to the `long` partition, `qualimap_hc` to `long` with `3 * input.size_mb` memory and `attempt * 7600` runtime, `samtools_stats_HC` runtime ×3, `HaplotypeCaller_wholegenome` runtime ×4, `concat_vcf` runtime 600, and `vcf_stats` moved to `long` with `attempt * 1440` runtime (the `fast` partition's 24 h MaxTime rejects `attempt >= 2`).
 
 ---
 

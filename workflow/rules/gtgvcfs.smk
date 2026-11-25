@@ -22,6 +22,7 @@ rule export_gendb_gvcf:
         partition="long",
         cpus_per_task=2,
         mem_mb=get_mem_mb,
+        java_mem_overhead_mb=4000,
         runtime=2160,
         tmpdir=config["resources"]["tmpdir"],
     input:
@@ -39,7 +40,7 @@ rule export_gendb_gvcf:
         "../envs/gatk4.yaml"
     shell:
         """
-        gatk --java-options "{params.java_opts} -Xmx{resources.mem_mb}m \
+        gatk --java-options "{params.java_opts} -Xmx$(( {resources.mem_mb} - {resources.java_mem_overhead_mb} ))M \
             -Djava.io.tmpdir={resources.tmpdir}" \
             SelectVariants \
             -R {input.ref} \

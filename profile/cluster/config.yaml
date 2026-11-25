@@ -60,7 +60,7 @@ set-resources:
     slurm_partition: "fast"
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 8000)
-    runtime: attempt * 60  # observed P95: 1.9 min × 1.5
+    runtime: attempt * 60  # calibrated floor; increase if timeouts occur
   qualimap_hc:
     slurm_partition: "long"
     cpus_per_task: 8
@@ -85,7 +85,7 @@ set-resources:
     slurm_partition: "long"
     cpus_per_task: 4
     mem_mb: max((1.5 * input.size_mb) * attempt, 16000)  # uncalibrated: one job scans the whole genome per sample, not a single scaffold
-    runtime: attempt * 2880  # uncalibrated starting point (12h); refine once real run times are observed
+    runtime: attempt * 2880  # uncalibrated starting point (48h); refine once real run times are observed
   combine_gvcfs:
     slurm_partition: "fast"
     cpus_per_task: 10
@@ -99,7 +99,9 @@ set-resources:
   export_gendb_gvcf:
     slurm_partition: "long"
     cpus_per_task: 2
-    mem_mb: max((1.5 * input.size_mb) * attempt, 32000)  # GenomicsDB reader streams the whole chrom; 32 Go floor
+    # mem_mb left to the rule's get_mem_mb callable (max(32000, attempt*16000)) so retry
+    # escalation works: input.size_mb here is the reference FASTA (roughly constant), not
+    # the chromosome, so a size-based profile formula would stay flat across attempts.
     runtime: attempt * 2160  # GenomicsDB read rate ~20-30 Mb/min on big chroms; not yet observed — increase if timeouts occur
   genotype_gvcfs:
     slurm_partition: "long"
