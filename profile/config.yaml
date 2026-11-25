@@ -154,7 +154,9 @@ set-resources:
   export_gendb_gvcf:
     slurm_partition: "long"
     cpus_per_task: 2
-    mem_mb: max((1.5 * input.size_mb) * attempt, 32000)  # GenomicsDB reader streams the whole chrom; 32 Go floor
+    # mem_mb left to the rule's get_mem_mb callable (max(32000, attempt*16000)) so retry
+    # escalation works: input.size_mb here is the reference FASTA (roughly constant), not
+    # the chromosome, so a size-based profile formula would stay flat across attempts.
     runtime: attempt * 2160  # GenomicsDB read rate ~20-30 Mb/min on big chroms; not yet observed — increase if timeouts occur
   genotype_gvcfs:
     slurm_partition: "long"
