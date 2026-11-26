@@ -29,13 +29,24 @@
 #   run_shave.sh, transfer_results.sh, README.md, CHANGELOG.md,
 #   Cluster_logs/ (empty), parse_stats_data.py, biblio/
 #
-# RESUME: safe to re-run after a failure (srun/sbatch killed, node lost).
-#   rsync --checksum is per-file incremental. On a re-run the script
-#   first compares source vs destination (checksum) and only sends what
-#   is missing or changed. The destination is REUSED when it exists
-#   without a .transfer_complete marker (= interrupted transfer). A
-#   completed archive (marker present) is never reopened: that re-run
-#   gets a fresh, timestamped destination instead.
+# RESUME: safe to re-run after a failure (srun/sbatch killed, node lost),
+#   even days later.
+#   - Destination: the script scans results_dir for archives named
+#     <run_name>_YYYY-MM-DD* and resumes into the NEWEST one without a
+#     .transfer_complete marker — even if it was created on an earlier
+#     day. A completed archive (marker present) is never reopened:
+#     that re-run gets a fresh, timestamped destination instead.
+#   - Plan: a quick size+mtime comparison (stat only, no data read)
+#     decides what is still missing, so planning takes seconds even
+#     for multi-TB targets. An interrupted rsync leaves a missing or
+#     partial (smaller) file, both detected here.
+#   - Transfer: plain rsync (size+mtime skip rule), no hashing.
+#   - Verification: one full --checksum pass over source and
+#     destination is the integrity gate that runs BEFORE the pipeline
+#     is cleaned. That is the only checksum pass of the whole run.
+#     The job's own SLURM log (Cluster_logs/*-<jobid>-*.out/.err) is
+#     excluded: it grows while the job runs, so comparing it would be a
+#     false mismatch. It is archived by the next run, once stable.
 
 set -euo pipefail
 
@@ -71,9 +82,6 @@ import yaml
 c = yaml.safe_load(open('config/config.yaml'))
 print(c['transfer']['run_name'])
 ")
-
-date_stamp=$(date +"%Y-%m-%d")
-base_destination="${results_dir}/${run_name}_${date_stamp}"
 
 ###### Build list of targets to transfer ######
 transfer_targets=(
@@ -114,26 +122,62 @@ if [ ${#existing_targets[@]} -eq 0 ]; then
     exit 0
 fi
 
-###### Select destination (resume-aware) ######
-# Interrupted transfer = existing destination without .transfer_complete
-# marker while source data still exists: resume into the same directory.
-# Completed archive = marker present: never reopen it, start a fresh,
-# timestamped destination so archives stay separate.
-destination="$base_destination"
+# When run via sbatch, this job's own SLURM log (Cluster_logs/<jobname>-<jobid>-<node>.out/.err)
+# is written WHILE the script runs. If it were included in the plan,
+# the transfer, or the verification, the verification gate would see a
+# file whose source copy keeps growing -> false "checksum mismatch" ->
+# exit 1 -> and every sbatch re-run creates a NEW growing log (new job
+# id) -> livelock. Exclude the current job's own logs from all rsync
+# calls; they will be archived by the NEXT run, once stable.
+rsync_excludes=()
+if [ -n "${SLURM_JOB_ID:-}" ]; then
+    rsync_excludes+=(
+        --exclude "*-${SLURM_JOB_ID}-*.out"
+        --exclude "*-${SLURM_JOB_ID}-*.err"
+    )
+fi
+
+###### Select destination (resume-aware, works across days) ######
+# The archive directory is dated, but an interrupted transfer may be
+# days old: "today's" directory alone is not a reliable resume target.
+# Rule: scan results_dir for this run_name's dated archives.
+#   - NEWEST archive WITHOUT a .transfer_complete marker, dated within
+#     the last 7 days -> interrupted transfer: resume into it.
+#     (Older incomplete archives are left alone: re-opening one from a
+#     previous experiment would mix two runs' data in one archive.)
+#   - otherwise -> fresh dated directory for today; if today's is
+#     already completed, add a time suffix so archives stay separate.
+# Directory names start with <run_name>_YYYY-MM-DD, which sort
+# chronologically, so the last match of the glob is the newest.
+MAX_RESUME_AGE_DAYS=7
+destination="${results_dir}/${run_name}_$(date +%Y-%m-%d)"
 resumed=false
-if [ -d "$destination" ]; then
-    if [ -f "${destination}/.transfer_complete" ]; then
-        echo "Destination already holds a COMPLETED archive:"
-        echo "  ${destination}"
-        echo "Starting a fresh, timestamped destination for this (re-)run:"
-        destination="${destination}_$(date +%H%M%S)"
-    else
-        echo "Destination exists, no completion marker, and the pipeline"
-        echo "still holds data to transfer."
-        echo "RESUMING the interrupted transfer into the same directory:"
-        echo "  ${destination}"
-        resumed=true
+for archive in "${results_dir}/${run_name}_"*; do
+    [ -d "$archive" ] || continue
+    [ -f "${archive}/.transfer_complete" ] && continue
+    archive_date=$(basename "$archive" | sed -E 's/^[^_]+_([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')
+    age_days=$((($(date +%s) - $(date -d "$archive_date" +%s)) / 86400))
+    if [ "$age_days" -gt "$MAX_RESUME_AGE_DAYS" ]; then
+        echo "WARNING: incomplete archive is ${age_days} days old (> ${MAX_RESUME_AGE_DAYS}):"
+        echo "  ${archive}"
+        echo "It will NOT be resumed (stale). Delete it manually if it is"
+        echo "no longer needed, or start a fresh archive (default)."
+        continue
     fi
+    destination="$archive"
+    resumed=true
+done
+
+if [ "$resumed" = true ]; then
+    echo "Found an INCOMPLETE archive (no .transfer_complete marker):"
+    echo "  ${destination}"
+    echo "RESUMING the interrupted transfer into it (date-independent)."
+elif [ -d "$destination" ]; then
+    # Today's directory exists and holds a COMPLETED archive.
+    echo "Today's archive is already COMPLETED:"
+    echo "  ${destination}"
+    echo "Starting a fresh, timestamped destination for this (re-)run:"
+    destination="${destination}_$(date +%H%M%S)"
 fi
 
 ###### About ######
@@ -163,19 +207,25 @@ if [ "$resumed" = false ]; then
         echo "  ${target}: will transfer"
     done
 else
-    # Resume: ask rsync per target what would change. -i itemizes per
-    # file; lines starting with '>f' are files that would be sent
-    # (missing in destination or checksum-different). Empty result =
-    # already in sync.
+    # Resume: quick size+mtime diff per target (stat only — no data is
+    # read, so the plan finishes in seconds even for multi-TB targets).
+    # An interrupted rsync leaves a missing file or a partial one
+    # (smaller size), both detected here. -i itemizes per item; lines
+    # starting with '>' are items to send (files, symlinks, ...) and
+    # lines starting with 'cd' are directories to create (matters for
+    # EMPTY target dirs such as Cluster_logs/ — without them the
+    # destination would lack the dir and STEP 3 would report a false
+    # mismatch). In-sync items are not listed at all.
     pending_targets=()
     for target in "${existing_targets[@]}"; do
         src="${workdir}/${target}"
-        plan_out=$(rsync -ai --checksum --dry-run \
+        plan_out=$(rsync -ain --dry-run \
+            "${rsync_excludes[@]}" \
             "$src" "${destination}/" 2>&1) || true
-        pending_files=$(printf '%s\n' "$plan_out" | grep -c '^>f' || true)
-        if [ "$pending_files" -gt 0 ]; then
+        pending_items=$(printf '%s\n' "$plan_out" | grep -cE '^(>|cd)' || true)
+        if [ "$pending_items" -gt 0 ]; then
             pending_targets+=("$target")
-            echo "  ${target}: ${pending_files} file(s) to transfer"
+            echo "  ${target}: ${pending_items} item(s) to transfer"
         else
             echo "  ${target}: up-to-date (skip)"
         fi
@@ -197,7 +247,11 @@ else
     for target in "${pending_targets[@]}"; do
         src="${workdir}/${target}"
         echo "Transferring: $target"
-        rsync -a --checksum --info=progress2 \
+        # No --checksum: size+mtime skip is enough here (the plan above
+        # already selected the targets, and STEP 3 hashes everything as
+        # the integrity gate).
+        rsync -a --info=progress2 \
+            "${rsync_excludes[@]}" \
             "$src" "${destination}/" 2>&1
         transfer_count=$((transfer_count + 1))
     done
@@ -220,6 +274,7 @@ for target in "${existing_targets[@]}"; do
     # on mismatch — || true keeps set -e from killing the script before
     # the error below is reported.
     diff_output=$(rsync -ai --checksum --dry-run \
+        "${rsync_excludes[@]}" \
         "$src" "${destination}/" 2>&1) || true
     if [ -n "$diff_output" ]; then
         echo "ERROR: Checksum mismatch for: $target"
@@ -232,6 +287,11 @@ if [ "$transfer_ok" = false ]; then
     echo ""
     echo "ERROR: Verification failed — source data preserved intact."
     echo "Check the destination manually: ${destination}"
+    echo ""
+    echo "Note: the plan and the transfer compare size+mtime, so a file"
+    echo "whose size and date match but whose content does not is only"
+    echo "caught here. To fix: delete the file(s) listed above from the"
+    echo "destination, then re-run the script."
     exit 1
 fi
 
