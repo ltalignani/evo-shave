@@ -268,11 +268,31 @@ sbatch transfer_results.sh
 ```
 
 The script is **resume-safe**: if the transfer job is killed mid-way (srun
-failure, node lost), re-running it compares source and destination with
-checksums and only sends what is still missing or changed, into the same
-destination directory. A completed archive is marked with a
-`.transfer_complete` file; a re-run against a completed archive gets a fresh
-timestamped destination instead.
+failure, node lost), re-running it picks up where the previous attempt
+stopped — even days later — and sends only what is still missing.
+
+How a re-run works:
+
+- **Destination**: the script scans `results_dir` for this run's dated
+  archives (`<run_name>_YYYY-MM-DD*`) and resumes into the newest one
+  **without** a `.transfer_complete` marker — even if that archive was
+  created on an earlier day. Incomplete archives older than 7 days are
+  left alone (a warning is printed); a completed archive is never
+  reopened — that re-run gets a fresh, timestamped destination instead.
+- **Plan**: a quick size+mtime comparison (stat only, no data read)
+  decides what is still missing, so planning takes seconds even for
+  multi-TB targets.
+- **Transfer**: plain rsync, no hashing during the copy.
+- **Verification**: one full `--checksum` pass over source and
+  destination is the integrity gate that runs *before* the pipeline is
+  cleaned — it catches files whose size and date match but whose content
+  does not. On mismatch the script exits 1, preserves the source, and
+  tells you which files to delete from the destination before re-running.
+
+When run via `sbatch`, the job's own SLURM log
+(`Cluster_logs/*-<jobid>-*.out`/`.err`) is excluded from the transfer and
+verification — it grows while the job runs, so comparing it would be a
+false mismatch. It is archived by the next run, once stable.
 
 Configure destination in `config/config.yaml`:
 

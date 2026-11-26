@@ -13,6 +13,53 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 The post-run archiving script (referenced in the README "Post-run tools" section but previously untracked) is now version-controlled. It transfers pipeline results to a dated archive in `config.transfer.results_dir`, verifies checksums, then cleans the pipeline. It is resume-safe: after an interrupted transfer (killed srun/sbatch job), a re-run compares source and destination with checksums, logs a per-target plan of what is still missing, and sends only the remainder into the same destination. Completed archives are marked with a `.transfer_complete` file; a re-run against a completed archive starts a fresh timestamped destination instead of reopening it.
 
+### Changed
+
+#### `transfer_results.sh` — fast, cross-day resume (rewrite of the resume path)
+
+First production run (6.2 TB) showed the old `--checksum`-based plan was
+the bottleneck: hashing ~13 GB (source + destination) at ~80 MB/s took
+~5.5 h, while the actual transfer of what was pending would have taken
+minutes. Two long jobs sat at 0% CPU hashing. The resume path was
+rewritten:
+
+- **Destination selection is now resume-aware and works across days.**
+  The script scans `results_dir` for this run's dated archives
+  (`<run_name>_YYYY-MM-DD*`) and resumes into the newest one without a
+  `.transfer_complete` marker — even if the interrupted transfer ended on
+  an earlier day. Incomplete archives older than 7 days are left alone
+  with a warning (re-opening one from a previous experiment would mix two
+  runs' data); a completed archive is never reopened — the re-run gets a
+  fresh `_<HHMMSS>`-suffixed destination instead.
+- **Plan is stat-only (size+mtime), seconds even for multi-TB targets.**
+  An interrupted rsync leaves a missing file or a partial (smaller) one —
+  both detected without reading any data. The old plan hashed the entire
+  source + destination.
+- **Transfer drops `--checksum`.** Size+mtime skip is enough during the
+  copy; integrity is guaranteed by the verification gate below.
+- **Verification is the single `--checksum` gate, and it runs before
+  cleanup.** One full checksum pass over source and destination per run
+  (previously the checksum work was spread over plan + transfer). On
+  mismatch the script exits 1, preserves the source untouched, and
+  reports the exact file(s) to delete from the destination before
+  re-running.
+- **Empty target directories are first-class plan items** (`cd` lines in
+  the rsync plan): an empty dir such as `Cluster_logs/` is created at the
+  destination instead of being silently skipped and later flagged as a
+  false verification mismatch.
+- **The job's own SLURM log is excluded from plan/transfer/verification**
+  when run via `sbatch` (`Cluster_logs/*-<jobid>-*.out`/`.err`): it grows
+  while the job runs, so comparing it would be a false mismatch, and every
+  `sbatch` re-run creates a new one (new job id) — a resume livelock. The
+  log is archived by the next run, once stable.
+
+All eight scenarios were validated on the cluster against a simulated
+pipeline: fresh run, same-day resume after interruption, cross-day resume
+(6-day-old archive), stale archive (> 7 days, not resumed), re-run of a
+completed archive (fresh timestamped destination), corrupt destination
+file with matching size+mtime (gate exits 1, source preserved), re-run
+after cleanup (empty `Cluster_logs` only), and sbatch self-log exclusion.
+
 ---
 
 ## [V8.2026.11.23] - 2026-11-23
