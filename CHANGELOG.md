@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [V9.2026.11.26] - 2026-11-26
+
+### Added
+
+#### `transfer_results.sh` — resumable results transfer script
+
+The post-run archiving script (referenced in the README "Post-run tools" section but previously untracked) is now version-controlled. It transfers pipeline results to a dated archive in `config.transfer.results_dir`, verifies checksums, then cleans the pipeline. It is resume-safe: after an interrupted transfer (killed srun/sbatch job), a re-run compares source and destination with checksums, logs a per-target plan of what is still missing, and sends only the remainder into the same destination. Completed archives are marked with a `.transfer_complete` file; a re-run against a completed archive starts a fresh timestamped destination instead of reopening it.
+
+---
+
 ## [V8.2026.11.23] - 2026-11-23
 
 ### Added

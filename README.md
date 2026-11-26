@@ -267,6 +267,13 @@ Transfer outputs to a shared archive and reset the pipeline for reuse:
 sbatch transfer_results.sh
 ```
 
+The script is **resume-safe**: if the transfer job is killed mid-way (srun
+failure, node lost), re-running it compares source and destination with
+checksums and only sends what is still missing or changed, into the same
+destination directory. A completed archive is marked with a
+`.transfer_complete` file; a re-run against a completed archive gets a fresh
+timestamped destination instead.
+
 Configure destination in `config/config.yaml`:
 
 ```yaml
